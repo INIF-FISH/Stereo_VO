@@ -21,11 +21,13 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(FMT REQUIRED)
+find_package(G2O REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${G2O_INCLUDE_DIRS}
 )
 
 set(dependencies 
@@ -39,6 +41,7 @@ set(dependencies
   Ceres
   cv_bridge
   FMT
+  G2O
 )
 
 set(sources

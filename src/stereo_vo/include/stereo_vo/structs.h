@@ -145,6 +145,8 @@ namespace stereo_vo
         static std::shared_ptr<Frame> CreateFrame();
     };
 
+    enum class FrontendStatus { INITING, TRACKING_GOOD, TRACKING_BAD, LOST };
+
 } // namespace stereo_vo
 
 #endif // _STEREO_VO_STRUCTS_H
