@@ -7,6 +7,7 @@ endif()
 
 add_compile_options(-std=c++17)
 set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mpopcnt")
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -19,6 +20,7 @@ find_package(Sophus REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(FMT REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
@@ -36,11 +38,18 @@ set(dependencies
   Sophus
   Ceres
   cv_bridge
+  FMT
+)
+
+set(sources
+  src/stereo_vo/stereo_vo.cpp
+  src/stereo_vo/structs.cpp
+  src/stereo_vo/map.cpp
+  src/stereo_vo_node.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED
-  src/stereo_vo/stereo_vo.cpp
-  src/stereo_vo_node.cpp
+  ${sources} 
 )
 
 ament_target_dependencies(${PROJECT_NAME}
@@ -62,8 +71,7 @@ rclcpp_components_register_nodes(${PROJECT_NAME}
 )
 
 add_executable(${PROJECT_NAME}_node
-  src/stereo_vo/stereo_vo.cpp
-  src/stereo_vo_node.cpp
+  ${sources} 
 )
 
 ament_target_dependencies(${PROJECT_NAME}_node

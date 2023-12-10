@@ -14,13 +14,13 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     ld.add_action(Node(
-        package='stereo_cam_usb', executable='stereo_cam_usb_node_exe', output="log",
+        package='stereo_cam_usb', executable='stereo_cam_usb_node', output="screen",
         name="stereo_cam_usb",
-        respawn=True
+        # respawn=True
         ))
     ld.add_action(Node(
-        package='stereo_dso', executable='stereo_dso_node', output="log",
-        name="stereo_dso",
-        respawn=True
+        package='stereo_vo', executable='stereo_vo_node', output="screen",
+        name="stereo_vo",
+        # respawn=True
         ))
     return ld

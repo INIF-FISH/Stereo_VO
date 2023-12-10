@@ -12,6 +12,8 @@ namespace stereo_cam_usb
 
         this->camera_index = this->declare_parameter<int>("camera_index", 0);
         this->camera_params_path = this->declare_parameter<std::string>("camera_params_path", package_share_directory + "/params/camera.yaml");
+        this->if_calcTransform = this->declare_parameter<bool>("if_calcTransform", false);
+        this->if_correctImage = this->declare_parameter<bool>("if_correctImage", true);
         this->camera_width = this->declare_parameter<int>("camera_width", 2560);
         this->camera_height = this->declare_parameter<int>("camera_height", 720);
         this->camera_fps = this->declare_parameter<int>("camera_fps", 60);
@@ -63,12 +65,16 @@ namespace stereo_cam_usb
             {
                 cv::Mat image;
                 this->_StereoCamUsb->readImage();
-                this->_StereoCamUsb->correctImage();
-                // this->_StereoCamUsb->processSGBM();
+                if(this->if_correctImage)
+                    this->_StereoCamUsb->correctImage();
+                if(this->if_calcTransform)
+                    this->_StereoCamUsb->processSGBM();
                 this->_StereoCamUsb->getImage(image);
                 if (image.empty())
                     continue;
                 auto image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono8", image).toImageMsg();
+                image_msg->header.frame_id = "usb_stereo_frame";
+                image_msg->header.stamp = this->get_clock()->now();
                 this->_image_pub->publish(image_msg);
             }
         }
@@ -82,6 +88,8 @@ namespace stereo_cam_usb
         this->get_parameter("camera_height", this->camera_height);
         this->get_parameter("camera_fps", this->camera_fps);
         this->get_parameter("camera_exposure", this->camera_exposure);
+        this->get_parameter("if_calcTransform", this->if_calcTransform);
+        this->get_parameter("if_correctImage", this->if_correctImage);
         bool _param_change_flag = false;
         if (this->_camera_alive_flag)
         {

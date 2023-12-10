@@ -12,6 +12,7 @@
 #include <image_transport/image_transport.hpp>
 #include <image_transport/publisher.hpp>
 #include <image_transport/subscriber_filter.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 namespace stereo_vo
 {
@@ -19,7 +20,8 @@ namespace stereo_vo
     class StereoVONode : public rclcpp::Node
     {
     private:
-        
+        std::shared_ptr<StereoVO> _StereoVO;
+        std::string camera_params_path;
 
     public:
         StereoVONode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
