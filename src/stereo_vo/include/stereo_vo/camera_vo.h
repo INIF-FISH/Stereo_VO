@@ -8,7 +8,7 @@ namespace stereo_vo
     class Camera
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         typedef std::shared_ptr<Camera> Ptr;
 
         double fx_ = 0, fy_ = 0, cx_ = 0, cy_ = 0,

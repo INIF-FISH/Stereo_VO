@@ -21,7 +21,7 @@ namespace stereo_vo
     class VertexPose : public g2o::BaseVertex<6, SE3>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         virtual void setToOriginImpl() override { _estimate = SE3(); }
 
@@ -41,7 +41,7 @@ namespace stereo_vo
     class VertexXYZ : public g2o::BaseVertex<3, Vec3>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         virtual void setToOriginImpl() override { _estimate = Vec3::Zero(); }
 
         virtual void oplusImpl(const double *update) override
@@ -59,7 +59,7 @@ namespace stereo_vo
     class EdgeProjectionPoseOnly : public g2o::BaseUnaryEdge<2, Vec2, VertexPose>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         EdgeProjectionPoseOnly(const Vec3 &pos, const Mat33 &K)
             : _pos3d(pos), _K(K) {}
@@ -104,9 +104,8 @@ namespace stereo_vo
         : public g2o::BaseBinaryEdge<2, Vec2, VertexPose, VertexXYZ>
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        /// 构造时传入相机内外参
         EdgeProjection(const Mat33 &K, const SE3 &cam_ext) : _K(K)
         {
             _cam_ext = cam_ext;

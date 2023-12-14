@@ -11,7 +11,6 @@ namespace stereo_vo
     bool Frontend::AddFrame(stereo_vo::Frame::Ptr frame)
     {
         current_frame_ = frame;
-
         switch (status_)
         {
         case FrontendStatus::INITING:
@@ -20,9 +19,11 @@ namespace stereo_vo
         case FrontendStatus::TRACKING_GOOD:
         case FrontendStatus::TRACKING_BAD:
             Track();
+            std::cout << "Tracking..." << std::endl;
             break;
         case FrontendStatus::LOST:
             Reset();
+            std::cout << "Lost reset." << std::endl;
             break;
         }
 
@@ -39,6 +40,7 @@ namespace stereo_vo
 
         int num_track_last = TrackLastFrame();
         tracking_inliers_ = EstimateCurrentPose();
+        std::cout << "tracking_inliers_: " << tracking_inliers_ << std::endl;
 
         if (tracking_inliers_ > num_features_tracking_)
         {
@@ -55,7 +57,6 @@ namespace stereo_vo
 
         InsertKeyframe();
         relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
-
         // if (viewer_)
         //     viewer_->AddCurrentFrame(current_frame_);
         return true;
@@ -208,7 +209,12 @@ namespace stereo_vo
                 }
             }
         }
+        std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
+                  << features.size() - cnt_outlier << std::endl;
         current_frame_->SetPose(vertex_pose->estimate());
+
+        std::cout << "Current Pose = \n"
+                  << current_frame_->Pose().matrix() << std::endl;
 
         for (auto &feat : features)
         {
@@ -263,7 +269,12 @@ namespace stereo_vo
                 num_good_pts++;
             }
         }
-
+        cv::Mat imgshow;
+        std::vector<cv::KeyPoint> keyPoints;
+        cv::KeyPoint::convert(kps_current, keyPoints);
+        cv::drawKeypoints(current_frame_->left_img_, keyPoints, imgshow);
+        cv::imshow("FLKResult", imgshow);
+        cv::waitKey(1);
         return num_good_pts;
     }
 
@@ -298,9 +309,10 @@ namespace stereo_vo
             cv::rectangle(mask, feat->position_.pt - cv::Point2f(10, 10),
                           feat->position_.pt + cv::Point2f(10, 10), 0, cv::FILLED);
         }
-
         std::vector<cv::KeyPoint> keypoints;
-        gftt_->detect(current_frame_->left_img_, keypoints, mask);
+        std::vector<DescType> descriptor;
+        cv::FAST(current_frame_->left_img_, keypoints, 40);
+        ComputeORB(current_frame_->left_img_, keypoints, descriptor);
         int cnt_detected = 0;
         for (auto &kp : keypoints)
         {
@@ -308,7 +320,11 @@ namespace stereo_vo
                 Feature::Ptr(new Feature(current_frame_, kp)));
             cnt_detected++;
         }
-
+        std::cout << "Detect " << cnt_detected << " new features" << std::endl;
+        cv::Mat imgshow;
+        cv::drawKeypoints(current_frame_->left_img_, keypoints, imgshow);
+        cv::imshow("ORBResult", imgshow);
+        cv::waitKey(1);
         return cnt_detected;
     }
 
@@ -356,6 +372,15 @@ namespace stereo_vo
                 current_frame_->features_right_.push_back(nullptr);
             }
         }
+
+        std::cout << "Find " << num_good_pts << " in the right image." << std::endl;
+        cv::Mat imgshow;
+        std::vector<cv::KeyPoint> keyPoints;
+        cv::KeyPoint::convert(kps_right, keyPoints);
+        cv::drawKeypoints(current_frame_->right_img_, keyPoints, imgshow);
+        cv::imshow("FLKResult_right", imgshow);
+        cv::waitKey(1);
+
         return num_good_pts;
     }
 
@@ -397,6 +422,97 @@ namespace stereo_vo
 
     bool Frontend::Reset()
     {
+        status_ = FrontendStatus::INITING;
         return true;
+    }
+
+    void Frontend::ComputeORB(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, std::vector<DescType> &descriptors)
+    {
+        const int half_patch_size = 8;
+        const int half_boundary = 16;
+        int bad_points = 0;
+        for (auto &kp : keypoints)
+        {
+            if (kp.pt.x < half_boundary || kp.pt.y < half_boundary ||
+                kp.pt.x >= img.cols - half_boundary || kp.pt.y >= img.rows - half_boundary)
+            {
+                // outside
+                bad_points++;
+                descriptors.push_back({});
+                continue;
+            }
+
+            float m01 = 0, m10 = 0;
+            for (int dx = -half_patch_size; dx < half_patch_size; ++dx)
+            {
+                for (int dy = -half_patch_size; dy < half_patch_size; ++dy)
+                {
+                    uchar pixel = img.at<uchar>(kp.pt.y + dy, kp.pt.x + dx);
+                    m10 += dx * pixel;
+                    m01 += dy * pixel;
+                }
+            }
+
+            // angle should be arc tan(m01/m10);
+            float m_sqrt = sqrt(m01 * m01 + m10 * m10) + 1e-18; // avoid divide by zero
+            float sin_theta = m01 / m_sqrt;
+            float cos_theta = m10 / m_sqrt;
+
+            // compute the angle of this point
+            DescType desc(8, 0);
+            for (int i = 0; i < 8; i++)
+            {
+                uint32_t d = 0;
+                for (int k = 0; k < 32; k++)
+                {
+                    int idx_pq = i * 32 + k;
+                    cv::Point2f p(ORB_pattern[idx_pq * 4], ORB_pattern[idx_pq * 4 + 1]);
+                    cv::Point2f q(ORB_pattern[idx_pq * 4 + 2], ORB_pattern[idx_pq * 4 + 3]);
+
+                    // rotate with theta
+                    cv::Point2f pp = cv::Point2f(cos_theta * p.x - sin_theta * p.y, sin_theta * p.x + cos_theta * p.y) + kp.pt;
+                    cv::Point2f qq = cv::Point2f(cos_theta * q.x - sin_theta * q.y, sin_theta * q.x + cos_theta * q.y) + kp.pt;
+                    if (img.at<uchar>(pp.y, pp.x) < img.at<uchar>(qq.y, qq.x))
+                    {
+                        d |= 1 << k;
+                    }
+                }
+                desc[i] = d;
+            }
+            descriptors.push_back(desc);
+        }
+
+        std::cout << "bad/total: " << bad_points << "/" << keypoints.size() << std::endl;
+    }
+
+    void Frontend::BfMatch(const std::vector<DescType> &desc1, const std::vector<DescType> &desc2, std::vector<cv::DMatch> &matches)
+    {
+        const int d_max = 40;
+
+        for (size_t i1 = 0; i1 < desc1.size(); ++i1)
+        {
+            if (desc1[i1].empty())
+                continue;
+            cv::DMatch m{i1, 0, 256};
+            for (size_t i2 = 0; i2 < desc2.size(); ++i2)
+            {
+                if (desc2[i2].empty())
+                    continue;
+                int distance = 0;
+                for (int k = 0; k < 8; k++)
+                {
+                    distance += _mm_popcnt_u32(desc1[i1][k] ^ desc2[i2][k]);
+                }
+                if (distance < d_max && distance < m.distance)
+                {
+                    m.distance = distance;
+                    m.trainIdx = i2;
+                }
+            }
+            if (m.distance < d_max)
+            {
+                matches.push_back(m);
+            }
+        }
     }
 }

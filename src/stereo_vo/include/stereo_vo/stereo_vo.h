@@ -2,8 +2,8 @@
 #define _STEREO_VO_H
 
 #include "./common_includes.h"
-
 #include "./structs.h"
+#include "./frontend.h"
 
 namespace stereo_vo
 {
@@ -17,6 +17,9 @@ namespace stereo_vo
         bool _is_calcTransform_flag = false;
         bool _params_init_flag = false;
 
+        Frontend::Ptr frontend_ = nullptr;
+        Map::Ptr map_ = nullptr;
+
     public:
         bool _ifShowErr = false;
 
@@ -24,13 +27,14 @@ namespace stereo_vo
         StereoVO();
         ~StereoVO();
 
+        void init();
         bool read_param(const std::string &path, const int frame_width, const int frame_height);
         bool _is_params_inited();
         void calcTransform();
         bool _is_calced_Transform();
 
     public:
-        void addFrame(cv::Mat &img_l, cv::Mat &img_r);
+        bool addFrame(cv::Mat &img_l, cv::Mat &img_r);
     };
 } // namespace stereo_vo
 

@@ -8,12 +8,13 @@ endif()
 add_compile_options(-std=c++17)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mpopcnt")
+list( APPEND CMAKE_MODULE_PATH /home/nine-fish/envs/g2o/cmake_modules ) # g2o安装位置
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4.8.0 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(Sophus REQUIRED)
@@ -48,6 +49,8 @@ set(sources
   src/stereo_vo/stereo_vo.cpp
   src/stereo_vo/structs.cpp
   src/stereo_vo/map.cpp
+  src/stereo_vo/camera_vo.cpp
+  src/stereo_vo/frontend.cpp
   src/stereo_vo_node.cpp
 )
 
@@ -57,11 +60,6 @@ add_library(${PROJECT_NAME} SHARED
 
 ament_target_dependencies(${PROJECT_NAME}
   ${dependencies}  
-)
-
-target_link_libraries(${PROJECT_NAME}
-  ${OpenCV_LIBRARIES}
-  ${Eigen3_LIBRARIES}
 )
 
 target_compile_definitions(${PROJECT_NAME}
@@ -79,6 +77,13 @@ add_executable(${PROJECT_NAME}_node
 
 ament_target_dependencies(${PROJECT_NAME}_node
   ${dependencies}
+)
+
+target_link_libraries(${PROJECT_NAME}_node
+  ${OpenCV_LIBRARIES}
+  ${Eigen3_LIBRARIES}
+  ${G2O_LIBRARIES}
+  g2o_core g2o_stuff g2o_types_sba g2o_solver_csparse g2o_csparse_extension
 )
 
 install(TARGETS 

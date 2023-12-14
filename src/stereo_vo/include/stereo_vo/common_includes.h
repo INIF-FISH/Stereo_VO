@@ -107,4 +107,6 @@ typedef Eigen::Matrix<float, 14, 1> Vec14f;
 typedef Sophus::SE3d SE3;
 typedef Sophus::SO3d SO3;
 
+typedef std::vector<uint32_t> DescType;
+
 #endif // _COMMON_INCLUDES_H

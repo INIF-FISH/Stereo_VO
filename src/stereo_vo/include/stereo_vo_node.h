@@ -35,12 +35,14 @@ namespace stereo_vo
         std::deque<sensor_msgs::msg::Image::ConstSharedPtr> image_deque_;
         std::shared_timed_mutex image_deque_mutex;
 
+        bool _is_alive = true;
+
     private:
         void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr &img_info);
         void detectCallback();
 
     public:
-        rclcpp::TimerBase::SharedPtr _detect_timer;
+        std::shared_ptr<std::thread> _detect_thread;
 
     };
 } // namespace stereo_vo

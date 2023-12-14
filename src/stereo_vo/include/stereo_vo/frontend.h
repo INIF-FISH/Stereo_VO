@@ -13,7 +13,7 @@ namespace stereo_vo
     class Frontend
     {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         typedef std::shared_ptr<Frontend> Ptr;
 
         Frontend(const int num_features, const int num_features_init);
@@ -27,6 +27,12 @@ namespace stereo_vo
         // void SetViewer(std::shared_ptr<Viewer> viewer) { viewer_ = viewer; }
 
         FrontendStatus GetStatus() const { return status_; }
+
+        void SetCameras(Camera::Ptr left, Camera::Ptr right)
+        {
+            camera_left_ = left;
+            camera_right_ = right;
+        }
 
     private:
         typedef std::vector<uint32_t> DescType;
@@ -303,6 +309,8 @@ namespace stereo_vo
         bool BuildInitMap();
         int TriangulateNewPoints();
         void SetObservationsForKeyFrame();
+        void ComputeORB(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, std::vector<DescType> &descriptors);
+        void BfMatch(const std::vector<DescType> &desc1, const std::vector<DescType> &desc2, std::vector<cv::DMatch> &matches);
 
         FrontendStatus status_ = FrontendStatus::INITING;
 
@@ -324,8 +332,6 @@ namespace stereo_vo
         int num_features_tracking_ = 50;
         int num_features_tracking_bad_ = 20;
         int num_features_needed_for_keyframe_ = 80;
-
-        cv::Ptr<cv::GFTTDetector> gftt_;
     };
 } // namespace stereo_vo
 
