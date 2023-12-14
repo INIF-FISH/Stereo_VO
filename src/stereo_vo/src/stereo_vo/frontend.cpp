@@ -23,7 +23,8 @@ namespace stereo_vo
             break;
         case FrontendStatus::LOST:
             Reset();
-            std::cout << "Lost reset." << std::endl;
+            std::cout << "Lost." << std::endl;
+            abort;
             break;
         }
 
@@ -76,7 +77,7 @@ namespace stereo_vo
 
         FindFeaturesInRight();
         TriangulateNewPoints();
-        // backend_->UpdateMap();
+        backend_->UpdateMap();
 
         // if (viewer_)
         //     viewer_->UpdateMap();
@@ -104,7 +105,6 @@ namespace stereo_vo
             if (current_frame_->features_left_[i]->map_point_.expired() &&
                 current_frame_->features_right_[i] != nullptr)
             {
-                // 左图的特征点未关联地图点且存在右图匹配点，尝试三角化
                 std::vector<Vec3> points{
                     camera_left_->pixel2camera(
                         Vec2(current_frame_->features_left_[i]->position_.pt.x,
@@ -415,19 +415,20 @@ namespace stereo_vo
         }
         current_frame_->SetKeyFrame();
         map_->InsertKeyFrame(current_frame_);
-        // backend_->UpdateMap();
+        backend_->UpdateMap();
 
         return true;
     }
 
     bool Frontend::Reset()
     {
-        status_ = FrontendStatus::INITING;
+        
         return true;
     }
 
     void Frontend::ComputeORB(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, std::vector<DescType> &descriptors)
     {
+        std::vector<cv::KeyPoint> keypoints_good;
         const int half_patch_size = 8;
         const int half_boundary = 16;
         int bad_points = 0;
@@ -436,7 +437,6 @@ namespace stereo_vo
             if (kp.pt.x < half_boundary || kp.pt.y < half_boundary ||
                 kp.pt.x >= img.cols - half_boundary || kp.pt.y >= img.rows - half_boundary)
             {
-                // outside
                 bad_points++;
                 descriptors.push_back({});
                 continue;
@@ -453,12 +453,10 @@ namespace stereo_vo
                 }
             }
 
-            // angle should be arc tan(m01/m10);
-            float m_sqrt = sqrt(m01 * m01 + m10 * m10) + 1e-18; // avoid divide by zero
+            float m_sqrt = sqrt(m01 * m01 + m10 * m10) + 1e-18;
             float sin_theta = m01 / m_sqrt;
             float cos_theta = m10 / m_sqrt;
 
-            // compute the angle of this point
             DescType desc(8, 0);
             for (int i = 0; i < 8; i++)
             {
@@ -469,7 +467,6 @@ namespace stereo_vo
                     cv::Point2f p(ORB_pattern[idx_pq * 4], ORB_pattern[idx_pq * 4 + 1]);
                     cv::Point2f q(ORB_pattern[idx_pq * 4 + 2], ORB_pattern[idx_pq * 4 + 3]);
 
-                    // rotate with theta
                     cv::Point2f pp = cv::Point2f(cos_theta * p.x - sin_theta * p.y, sin_theta * p.x + cos_theta * p.y) + kp.pt;
                     cv::Point2f qq = cv::Point2f(cos_theta * q.x - sin_theta * q.y, sin_theta * q.x + cos_theta * q.y) + kp.pt;
                     if (img.at<uchar>(pp.y, pp.x) < img.at<uchar>(qq.y, qq.x))
@@ -479,10 +476,12 @@ namespace stereo_vo
                 }
                 desc[i] = d;
             }
+            keypoints_good.push_back(kp);
             descriptors.push_back(desc);
         }
 
         std::cout << "bad/total: " << bad_points << "/" << keypoints.size() << std::endl;
+        keypoints.swap(keypoints_good);
     }
 
     void Frontend::BfMatch(const std::vector<DescType> &desc1, const std::vector<DescType> &desc2, std::vector<cv::DMatch> &matches)
@@ -493,7 +492,7 @@ namespace stereo_vo
         {
             if (desc1[i1].empty())
                 continue;
-            cv::DMatch m{i1, 0, 256};
+            cv::DMatch m{int(i1), 0, 256};
             for (size_t i2 = 0; i2 < desc2.size(); ++i2)
             {
                 if (desc2[i2].empty())

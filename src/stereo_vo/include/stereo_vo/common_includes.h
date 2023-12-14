@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <nmmintrin.h>
 #include <memory>
+#include <thread>
+#include <condition_variable>
 
 // opencv
 #include <opencv2/core/core.hpp>

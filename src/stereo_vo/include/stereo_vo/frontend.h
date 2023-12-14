@@ -7,6 +7,7 @@
 #include "./camera_vo.h"
 #include "./algorithm.h"
 #include "./g2o_types.h"
+#include "./backend.h"
 
 namespace stereo_vo
 {
@@ -22,7 +23,7 @@ namespace stereo_vo
 
         void SetMap(Map::Ptr map) { map_ = map; }
 
-        // void SetBackend(std::shared_ptr<Backend> backend) { backend_ = backend; }
+        void SetBackend(std::shared_ptr<Backend> backend) { backend_ = backend; }
 
         // void SetViewer(std::shared_ptr<Viewer> viewer) { viewer_ = viewer; }
 
@@ -320,7 +321,7 @@ namespace stereo_vo
         Camera::Ptr camera_right_ = nullptr;
 
         Map::Ptr map_ = nullptr;
-        // std::shared_ptr<Backend> backend_ = nullptr;
+        std::shared_ptr<Backend> backend_ = nullptr;
         // std::shared_ptr<Viewer> viewer_ = nullptr;
 
         SE3 relative_motion_;

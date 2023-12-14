@@ -18,6 +18,7 @@ namespace stereo_vo
         bool _params_init_flag = false;
 
         Frontend::Ptr frontend_ = nullptr;
+        Backend::Ptr backend_ = nullptr;
         Map::Ptr map_ = nullptr;
 
     public:

@@ -23,6 +23,9 @@ find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(FMT REQUIRED)
 find_package(G2O REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
@@ -43,6 +46,9 @@ set(dependencies
   cv_bridge
   FMT
   G2O
+  tf2
+  tf2_ros
+  geometry_msgs
 )
 
 set(sources
@@ -51,6 +57,7 @@ set(sources
   src/stereo_vo/map.cpp
   src/stereo_vo/camera_vo.cpp
   src/stereo_vo/frontend.cpp
+  src/stereo_vo/backend.cpp
   src/stereo_vo_node.cpp
 )
 

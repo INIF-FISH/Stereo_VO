@@ -14,6 +14,7 @@ namespace stereo_vo
     {
         assert(_params_init_flag && _is_calcTransform_flag);
         this->frontend_ = Frontend::Ptr(new Frontend(150, 50));
+        this->backend_ = Backend::Ptr(new Backend);
         this->map_ = Map::Ptr(new Map);
         Mat33 K_1, K_2;
         K_1 << this->params.camera_matrix_left.at<double>(0, 0), this->params.camera_matrix_left.at<double>(0, 1), this->params.camera_matrix_left.at<double>(0, 2),
@@ -30,7 +31,11 @@ namespace stereo_vo
         Camera::Ptr new_camera_r(new Camera(K_2(0, 0), K_2(1, 1), K_2(0, 2), K_2(1, 2),
                                             t_2.norm(), SE3(SO3(), t_2)));
         this->frontend_->SetCameras(new_camera_l, new_camera_r);
+        this->frontend_->SetBackend(this->backend_);
         this->frontend_->SetMap(this->map_);
+
+        this->backend_->SetCameras(new_camera_l, new_camera_r);
+        this->backend_->SetMap(this->map_);
     }
 
     bool StereoVO::read_param(const std::string &path, const int frame_width, const int frame_height)
