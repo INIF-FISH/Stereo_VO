@@ -74,7 +74,6 @@ namespace stereo_vo
 
         SetObservationsForKeyFrame();
         DetectFeatures();
-
         FindFeaturesInRight();
         TriangulateNewPoints();
         backend_->UpdateMap();
@@ -251,7 +250,7 @@ namespace stereo_vo
         cv::Mat error;
         cv::calcOpticalFlowPyrLK(
             last_frame_->left_img_, current_frame_->left_img_, kps_last,
-            kps_current, status, error, cv::Size(11, 11), 3,
+            kps_current, status, error, cv::Size(31, 31), 5,
             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,
                              0.01),
             cv::OPTFLOW_USE_INITIAL_FLOW);
@@ -309,10 +308,11 @@ namespace stereo_vo
             cv::rectangle(mask, feat->position_.pt - cv::Point2f(10, 10),
                           feat->position_.pt + cv::Point2f(10, 10), 0, cv::FILLED);
         }
-        std::vector<cv::KeyPoint> keypoints;
-        std::vector<DescType> descriptor;
+        std::vector<cv::KeyPoint> keypoints, NMSkeypoints;
+        std::vector<DescType> descriptors;
         cv::FAST(current_frame_->left_img_, keypoints, 40);
-        ComputeORB(current_frame_->left_img_, keypoints, descriptor);
+        // nonMaximumSuppression(keypoints, NMSkeypoints, 5);
+        // ComputeORB(current_frame_->left_img_, keypoints, descriptors);
         int cnt_detected = 0;
         for (auto &kp : keypoints)
         {
@@ -351,7 +351,7 @@ namespace stereo_vo
         cv::Mat error;
         cv::calcOpticalFlowPyrLK(
             current_frame_->left_img_, current_frame_->right_img_, kps_left,
-            kps_right, status, error, cv::Size(11, 11), 3,
+            kps_right, status, error, cv::Size(31, 31), 5,
             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,
                              0.01),
             cv::OPTFLOW_USE_INITIAL_FLOW);
@@ -374,11 +374,17 @@ namespace stereo_vo
         }
 
         std::cout << "Find " << num_good_pts << " in the right image." << std::endl;
-        cv::Mat imgshow;
-        std::vector<cv::KeyPoint> keyPoints;
-        cv::KeyPoint::convert(kps_right, keyPoints);
-        cv::drawKeypoints(current_frame_->right_img_, keyPoints, imgshow);
-        cv::imshow("FLKResult_right", imgshow);
+        cv::Mat result;
+        cv::cvtColor(current_frame_->right_img_, result, cv::COLOR_GRAY2BGR);
+        for (size_t i = 0; i < kps_left.size(); ++i)
+        {
+            if (status[i])
+            {
+                cv::line(result, kps_left[i], kps_right[i], cv::Scalar(0, 255, 0), 2);
+                cv::circle(result, kps_right[i], 5, cv::Scalar(0, 0, 255), -1);
+            }
+        }
+        cv::imshow("Optical Flow Matching Result", result);
         cv::waitKey(1);
 
         return num_good_pts;
@@ -422,7 +428,7 @@ namespace stereo_vo
 
     bool Frontend::Reset()
     {
-        
+
         return true;
     }
 
@@ -511,6 +517,34 @@ namespace stereo_vo
             if (m.distance < d_max)
             {
                 matches.push_back(m);
+            }
+        }
+    }
+
+    void Frontend::nonMaximumSuppression(const std::vector<cv::KeyPoint> &srcKeypoints, std::vector<cv::KeyPoint> &dstKeypoints, int patchSize)
+    {
+        dstKeypoints.clear();
+
+        for (size_t i = 0; i < srcKeypoints.size(); ++i)
+        {
+            bool isMax = true;
+            for (size_t j = 0; j < srcKeypoints.size(); ++j)
+            {
+                if (i != j)
+                {
+                    float distance = sqrt(pow(srcKeypoints[i].pt.x - srcKeypoints[j].pt.x, 2) +
+                                          pow(srcKeypoints[i].pt.y - srcKeypoints[j].pt.y, 2));
+                    if (distance < patchSize)
+                    {
+                        isMax = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isMax)
+            {
+                dstKeypoints.push_back(srcKeypoints[i]);
             }
         }
     }

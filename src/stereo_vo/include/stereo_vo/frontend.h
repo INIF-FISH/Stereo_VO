@@ -312,6 +312,8 @@ namespace stereo_vo
         void SetObservationsForKeyFrame();
         void ComputeORB(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, std::vector<DescType> &descriptors);
         void BfMatch(const std::vector<DescType> &desc1, const std::vector<DescType> &desc2, std::vector<cv::DMatch> &matches);
+        void BfMatch(std::vector<cv::DMatch> &matches, const std::vector<DescType> &desc2);
+        void nonMaximumSuppression(const std::vector<cv::KeyPoint> &srcKeypoints, std::vector<cv::KeyPoint> &dstKeypoints, int patchSize);
 
         FrontendStatus status_ = FrontendStatus::INITING;
 

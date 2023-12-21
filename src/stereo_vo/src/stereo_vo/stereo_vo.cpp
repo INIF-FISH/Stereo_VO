@@ -13,7 +13,7 @@ namespace stereo_vo
     void StereoVO::init()
     {
         assert(_params_init_flag && _is_calcTransform_flag);
-        this->frontend_ = Frontend::Ptr(new Frontend(150, 50));
+        this->frontend_ = Frontend::Ptr(new Frontend(200, 100));
         this->backend_ = Backend::Ptr(new Backend);
         this->map_ = Map::Ptr(new Map);
         Mat33 K_1, K_2;

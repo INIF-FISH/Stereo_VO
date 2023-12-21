@@ -93,6 +93,7 @@ namespace stereo_vo
 
         std::weak_ptr<Frame> frame_;
         cv::KeyPoint position_;
+        DescType descriptor;
         std::weak_ptr<MapPoint> map_point_;
 
         bool is_outlier_ = false;
@@ -103,6 +104,8 @@ namespace stereo_vo
 
         Feature(std::shared_ptr<Frame> frame, const cv::KeyPoint &kp)
             : frame_(frame), position_(kp) {}
+        Feature(std::shared_ptr<Frame> frame, const cv::KeyPoint &kp, const DescType &desc)
+            : frame_(frame), position_(kp), descriptor(desc) {}
     };
 
     struct Frame
@@ -145,7 +148,13 @@ namespace stereo_vo
         static std::shared_ptr<Frame> CreateFrame();
     };
 
-    enum class FrontendStatus { INITING, TRACKING_GOOD, TRACKING_BAD, LOST };
+    enum class FrontendStatus
+    {
+        INITING,
+        TRACKING_GOOD,
+        TRACKING_BAD,
+        LOST
+    };
 
 } // namespace stereo_vo
 
