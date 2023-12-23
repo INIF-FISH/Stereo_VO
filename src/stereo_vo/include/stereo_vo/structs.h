@@ -9,6 +9,15 @@ namespace stereo_vo
     struct MapPoint;
     struct Feature;
 
+    struct greaterThanPtr
+    {
+        bool operator()(const float *a, const float *b) const
+        {
+            return (*a > *b) ? true : (*a < *b) ? false
+                                                : (a > b);
+        }
+    };
+
     struct CameraParameters
     {
         cv::Mat camera_matrix_left;

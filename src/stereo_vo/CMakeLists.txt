@@ -14,7 +14,7 @@ list( APPEND CMAKE_MODULE_PATH /home/nine-fish/envs/g2o/cmake_modules ) # g2o安
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(OpenCV 4.8.0 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(Sophus REQUIRED)
@@ -26,12 +26,14 @@ find_package(G2O REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(Pangolin REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   ${G2O_INCLUDE_DIRS}
+  ${Pangolin_INCLUDE_DIRS}
 )
 
 set(dependencies 
@@ -49,6 +51,7 @@ set(dependencies
   tf2
   tf2_ros
   geometry_msgs
+  Pangolin
 )
 
 set(sources
@@ -91,6 +94,7 @@ target_link_libraries(${PROJECT_NAME}_node
   ${Eigen3_LIBRARIES}
   ${G2O_LIBRARIES}
   g2o_core g2o_stuff g2o_types_sba g2o_solver_csparse g2o_csparse_extension
+  pthread
 )
 
 install(TARGETS 

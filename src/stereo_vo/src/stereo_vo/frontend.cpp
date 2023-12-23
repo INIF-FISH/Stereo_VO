@@ -6,6 +6,7 @@ namespace stereo_vo
     {
         this->num_features_init_ = num_features_init;
         this->num_features_ = num_features;
+        this->_gftt = cv::GFTTDetector::create(num_features);
     }
 
     bool Frontend::AddFrame(stereo_vo::Frame::Ptr frame)
@@ -19,17 +20,24 @@ namespace stereo_vo
         case FrontendStatus::TRACKING_GOOD:
         case FrontendStatus::TRACKING_BAD:
             Track();
-            std::cout << "Tracking..." << std::endl;
             break;
         case FrontendStatus::LOST:
             Reset();
-            std::cout << "Lost." << std::endl;
-            abort;
             break;
         }
 
         last_frame_ = current_frame_;
         return true;
+    }
+
+    bool Frontend::GetPose(Eigen::Matrix4d &pose)
+    {
+        if(current_frame_)
+        {
+            pose = current_frame_->Pose().matrix();
+            return true;
+        }
+        return false;
     }
 
     bool Frontend::Track()
@@ -58,8 +66,6 @@ namespace stereo_vo
 
         InsertKeyframe();
         relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
-        // if (viewer_)
-        //     viewer_->AddCurrentFrame(current_frame_);
         return true;
     }
 
@@ -77,9 +83,6 @@ namespace stereo_vo
         FindFeaturesInRight();
         TriangulateNewPoints();
         backend_->UpdateMap();
-
-        // if (viewer_)
-        //     viewer_->UpdateMap();
 
         return true;
     }
@@ -268,12 +271,6 @@ namespace stereo_vo
                 num_good_pts++;
             }
         }
-        cv::Mat imgshow;
-        std::vector<cv::KeyPoint> keyPoints;
-        cv::KeyPoint::convert(kps_current, keyPoints);
-        cv::drawKeypoints(current_frame_->left_img_, keyPoints, imgshow);
-        cv::imshow("FLKResult", imgshow);
-        cv::waitKey(1);
         return num_good_pts;
     }
 
@@ -290,11 +287,6 @@ namespace stereo_vo
         if (build_map_success)
         {
             status_ = FrontendStatus::TRACKING_GOOD;
-            // if (viewer_)
-            // {
-            //     viewer_->AddCurrentFrame(current_frame_);
-            //     viewer_->UpdateMap();
-            // }
             return true;
         }
         return false;
@@ -308,11 +300,8 @@ namespace stereo_vo
             cv::rectangle(mask, feat->position_.pt - cv::Point2f(10, 10),
                           feat->position_.pt + cv::Point2f(10, 10), 0, cv::FILLED);
         }
-        std::vector<cv::KeyPoint> keypoints, NMSkeypoints;
-        std::vector<DescType> descriptors;
-        cv::FAST(current_frame_->left_img_, keypoints, 40);
-        // nonMaximumSuppression(keypoints, NMSkeypoints, 5);
-        // ComputeORB(current_frame_->left_img_, keypoints, descriptors);
+        std::vector<cv::KeyPoint> keypoints;
+        this->_gftt->detect(current_frame_->left_img_, keypoints, mask);
         int cnt_detected = 0;
         for (auto &kp : keypoints)
         {
@@ -321,10 +310,6 @@ namespace stereo_vo
             cnt_detected++;
         }
         std::cout << "Detect " << cnt_detected << " new features" << std::endl;
-        cv::Mat imgshow;
-        cv::drawKeypoints(current_frame_->left_img_, keypoints, imgshow);
-        cv::imshow("ORBResult", imgshow);
-        cv::waitKey(1);
         return cnt_detected;
     }
 
@@ -361,6 +346,12 @@ namespace stereo_vo
         {
             if (status[i])
             {
+                if (abs(kps_right[i].y - kps_left[i].y) > 10 || kps_right[i].x - kps_left[i].x > 0)
+                {
+                    status[i] = false;
+                    current_frame_->features_right_.push_back(nullptr);
+                    continue;
+                }
                 cv::KeyPoint kp(kps_right[i], 7);
                 Feature::Ptr feat(new Feature(current_frame_, kp));
                 feat->is_on_left_image_ = false;
@@ -374,18 +365,6 @@ namespace stereo_vo
         }
 
         std::cout << "Find " << num_good_pts << " in the right image." << std::endl;
-        cv::Mat result;
-        cv::cvtColor(current_frame_->right_img_, result, cv::COLOR_GRAY2BGR);
-        for (size_t i = 0; i < kps_left.size(); ++i)
-        {
-            if (status[i])
-            {
-                cv::line(result, kps_left[i], kps_right[i], cv::Scalar(0, 255, 0), 2);
-                cv::circle(result, kps_right[i], 5, cv::Scalar(0, 0, 255), -1);
-            }
-        }
-        cv::imshow("Optical Flow Matching Result", result);
-        cv::waitKey(1);
 
         return num_good_pts;
     }
@@ -431,121 +410,4 @@ namespace stereo_vo
 
         return true;
     }
-
-    void Frontend::ComputeORB(const cv::Mat &img, std::vector<cv::KeyPoint> &keypoints, std::vector<DescType> &descriptors)
-    {
-        std::vector<cv::KeyPoint> keypoints_good;
-        const int half_patch_size = 8;
-        const int half_boundary = 16;
-        int bad_points = 0;
-        for (auto &kp : keypoints)
-        {
-            if (kp.pt.x < half_boundary || kp.pt.y < half_boundary ||
-                kp.pt.x >= img.cols - half_boundary || kp.pt.y >= img.rows - half_boundary)
-            {
-                bad_points++;
-                descriptors.push_back({});
-                continue;
-            }
-
-            float m01 = 0, m10 = 0;
-            for (int dx = -half_patch_size; dx < half_patch_size; ++dx)
-            {
-                for (int dy = -half_patch_size; dy < half_patch_size; ++dy)
-                {
-                    uchar pixel = img.at<uchar>(kp.pt.y + dy, kp.pt.x + dx);
-                    m10 += dx * pixel;
-                    m01 += dy * pixel;
-                }
-            }
-
-            float m_sqrt = sqrt(m01 * m01 + m10 * m10) + 1e-18;
-            float sin_theta = m01 / m_sqrt;
-            float cos_theta = m10 / m_sqrt;
-
-            DescType desc(8, 0);
-            for (int i = 0; i < 8; i++)
-            {
-                uint32_t d = 0;
-                for (int k = 0; k < 32; k++)
-                {
-                    int idx_pq = i * 32 + k;
-                    cv::Point2f p(ORB_pattern[idx_pq * 4], ORB_pattern[idx_pq * 4 + 1]);
-                    cv::Point2f q(ORB_pattern[idx_pq * 4 + 2], ORB_pattern[idx_pq * 4 + 3]);
-
-                    cv::Point2f pp = cv::Point2f(cos_theta * p.x - sin_theta * p.y, sin_theta * p.x + cos_theta * p.y) + kp.pt;
-                    cv::Point2f qq = cv::Point2f(cos_theta * q.x - sin_theta * q.y, sin_theta * q.x + cos_theta * q.y) + kp.pt;
-                    if (img.at<uchar>(pp.y, pp.x) < img.at<uchar>(qq.y, qq.x))
-                    {
-                        d |= 1 << k;
-                    }
-                }
-                desc[i] = d;
-            }
-            keypoints_good.push_back(kp);
-            descriptors.push_back(desc);
-        }
-
-        std::cout << "bad/total: " << bad_points << "/" << keypoints.size() << std::endl;
-        keypoints.swap(keypoints_good);
-    }
-
-    void Frontend::BfMatch(const std::vector<DescType> &desc1, const std::vector<DescType> &desc2, std::vector<cv::DMatch> &matches)
-    {
-        const int d_max = 40;
-
-        for (size_t i1 = 0; i1 < desc1.size(); ++i1)
-        {
-            if (desc1[i1].empty())
-                continue;
-            cv::DMatch m{int(i1), 0, 256};
-            for (size_t i2 = 0; i2 < desc2.size(); ++i2)
-            {
-                if (desc2[i2].empty())
-                    continue;
-                int distance = 0;
-                for (int k = 0; k < 8; k++)
-                {
-                    distance += _mm_popcnt_u32(desc1[i1][k] ^ desc2[i2][k]);
-                }
-                if (distance < d_max && distance < m.distance)
-                {
-                    m.distance = distance;
-                    m.trainIdx = i2;
-                }
-            }
-            if (m.distance < d_max)
-            {
-                matches.push_back(m);
-            }
-        }
-    }
-
-    void Frontend::nonMaximumSuppression(const std::vector<cv::KeyPoint> &srcKeypoints, std::vector<cv::KeyPoint> &dstKeypoints, int patchSize)
-    {
-        dstKeypoints.clear();
-
-        for (size_t i = 0; i < srcKeypoints.size(); ++i)
-        {
-            bool isMax = true;
-            for (size_t j = 0; j < srcKeypoints.size(); ++j)
-            {
-                if (i != j)
-                {
-                    float distance = sqrt(pow(srcKeypoints[i].pt.x - srcKeypoints[j].pt.x, 2) +
-                                          pow(srcKeypoints[i].pt.y - srcKeypoints[j].pt.y, 2));
-                    if (distance < patchSize)
-                    {
-                        isMax = false;
-                        break;
-                    }
-                }
-            }
-
-            if (isMax)
-            {
-                dstKeypoints.push_back(srcKeypoints[i]);
-            }
-        }
-    }
-}
+} // namespace stereo_vo

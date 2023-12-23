@@ -13,7 +13,7 @@ namespace stereo_vo
     void StereoVO::init()
     {
         assert(_params_init_flag && _is_calcTransform_flag);
-        this->frontend_ = Frontend::Ptr(new Frontend(200, 100));
+        this->frontend_ = Frontend::Ptr(new Frontend(300, 100));
         this->backend_ = Backend::Ptr(new Backend);
         this->map_ = Map::Ptr(new Map);
         Mat33 K_1, K_2;
@@ -36,6 +36,11 @@ namespace stereo_vo
 
         this->backend_->SetCameras(new_camera_l, new_camera_r);
         this->backend_->SetMap(this->map_);
+    }
+
+    void StereoVO::stop()
+    {
+        this->backend_->Stop();
     }
 
     bool StereoVO::read_param(const std::string &path, const int frame_width, const int frame_height)
@@ -96,5 +101,19 @@ namespace stereo_vo
         new_frame->right_img_ = img_r;
         this->frontend_->AddFrame(new_frame);
         return true;
+    }
+
+    bool StereoVO::getPose(Eigen::Matrix3d &rotation_matrix, Eigen::Vector3d &translation_vector)
+    {
+        Eigen::Matrix4d pose;
+        if (this->frontend_->GetPose(pose))
+        {
+            rotation_matrix << pose(0, 0), pose(0, 1), pose(0, 2),
+                pose(1, 0), pose(1, 1), pose(1, 2),
+                pose(2, 0), pose(2, 1), pose(2, 2);
+            translation_vector << pose(0, 3), pose(1, 3), pose(2, 3);
+            return true;
+        }
+        return false;
     }
 } // namespace stereo_vo

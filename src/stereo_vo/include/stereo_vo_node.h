@@ -13,6 +13,11 @@
 #include <image_transport/publisher.hpp>
 #include <image_transport/subscriber_filter.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/transform.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2_ros/transform_broadcaster.h" 
 
 namespace stereo_vo
 {
@@ -30,6 +35,7 @@ namespace stereo_vo
     private:
         std::shared_ptr<image_transport::Subscriber> _image_sub;
         std::shared_ptr<image_transport::Publisher> _image_pub;
+        std::shared_ptr<tf2_ros::TransformBroadcaster> _tf_pub;
 
     private:
         std::deque<sensor_msgs::msg::Image::ConstSharedPtr> image_deque_;

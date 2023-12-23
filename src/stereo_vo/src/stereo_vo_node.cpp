@@ -19,6 +19,7 @@ namespace stereo_vo
         this->_image_sub = std::make_shared<image_transport::Subscriber>(image_transport::create_subscription(this, "stereo_cam_usb/image_raw",
                                                                                                               std::bind(&StereoVONode::imageCallback, this, _1), "raw", rmw_qos));
         this->_image_pub = std::make_shared<image_transport::Publisher>(image_transport::create_publisher(this, "/stereo_vo/pub_image_raw", rmw_qos));
+        this->_tf_pub = std::make_unique<tf2_ros::TransformBroadcaster>(this);
         RCLCPP_INFO(this->get_logger(), "Register callback for stereo_usb camera ...");
 
         this->_StereoVO = std::make_shared<StereoVO>(StereoVO());
@@ -74,8 +75,32 @@ namespace stereo_vo
                 this->_StereoVO->init();
                 RCLCPP_INFO(this->get_logger(), "Success to init !");
             }
-            this->_StereoVO->addFrame(image_left, image_right);
+            if (this->_StereoVO->addFrame(image_left, image_right))
+            {
+                Eigen::Matrix3d rotation_matrix;
+                Eigen::Vector3d translation_vector;
+                if (this->_StereoVO->getPose(rotation_matrix, translation_vector))
+                {
+                    Eigen::Quaterniond rotation_quaternion(rotation_matrix);
+
+                    geometry_msgs::msg::TransformStamped transform_stamped;
+                    transform_stamped.header.stamp = this->now();
+                    transform_stamped.header.frame_id = "world";
+                    transform_stamped.child_frame_id = "odom";
+
+                    transform_stamped.transform.translation.x = -translation_vector.z();
+                    transform_stamped.transform.translation.y = translation_vector.x();
+                    transform_stamped.transform.translation.z = translation_vector.y();
+                    transform_stamped.transform.rotation.x = -rotation_quaternion.z();
+                    transform_stamped.transform.rotation.y = rotation_quaternion.x();
+                    transform_stamped.transform.rotation.z = rotation_quaternion.y();
+                    transform_stamped.transform.rotation.w = rotation_quaternion.w();
+
+                    this->_tf_pub->sendTransform(transform_stamped);
+                }
+            }
         }
+        this->_StereoVO->stop();
     }
 
 } // namespace stereo_dso

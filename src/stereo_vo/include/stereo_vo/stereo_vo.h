@@ -29,6 +29,7 @@ namespace stereo_vo
         ~StereoVO();
 
         void init();
+        void stop();
         bool read_param(const std::string &path, const int frame_width, const int frame_height);
         bool _is_params_inited();
         void calcTransform();
@@ -36,6 +37,7 @@ namespace stereo_vo
 
     public:
         bool addFrame(cv::Mat &img_l, cv::Mat &img_r);
+        bool getPose(Eigen::Matrix3d &rotation_matrix, Eigen::Vector3d &translation_vector);
     };
 } // namespace stereo_vo
 
