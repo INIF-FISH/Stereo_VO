@@ -45,13 +45,6 @@ namespace stereo_vo
     {
         cv::Mat distortImg = src.clone();
 
-        cv::Mat K_cv = cv::Mat::zeros(3, 3, CV_32F);
-        K_cv.at<float>(0, 0) = fx_;
-        K_cv.at<float>(0, 2) = cx_;
-        K_cv.at<float>(1, 1) = fy_;
-        K_cv.at<float>(1, 2) = cy_;
-        K_cv.at<float>(2, 2) = 1.0;
-
-        cv::undistort(distortImg, dst, K_cv, mDistCoef);
+        cv::remap(src, dst, this->undistmap1_, this->undistmap2_, cv::INTER_LINEAR);
     }
 } // namespace stereo_vo

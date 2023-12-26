@@ -37,3 +37,8 @@ rotation_of_camera_right: !!opencv-matrix
    data: [ 1.0, 0.000091422, -0.0082,
          -0.00015653, 1.0, -0.0079,
          0.0082, 0.0079, 0.9999 ]
+frame_size: !!opencv-matrix
+   rows: 1
+   cols: 2
+   dt: i
+   data: [ 2560, 720 ]

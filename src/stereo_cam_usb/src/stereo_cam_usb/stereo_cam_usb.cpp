@@ -44,6 +44,9 @@ namespace stereo_cam_usb
     {
         assert(this->cap != nullptr);
         this->cap->read(this->frame);
+        if (this->frame.empty())
+            return;
+        cv::cvtColor(this->frame, this->frame, cv::COLOR_BGR2GRAY);
     }
 
     bool StereoCamUsb::is_open()
@@ -67,7 +70,6 @@ namespace stereo_cam_usb
             return;
         if (!this->_is_calcTransform_flag)
             this->calcTransform();
-        cv::cvtColor(this->frame, this->frame, cv::COLOR_BGR2GRAY);
         cv::Mat image_l, image_r;
         this->frame(cv::Rect(0, 0, this->frame.cols / 2, this->frame.rows)).copyTo(image_l);
         this->frame(cv::Rect(this->frame.cols / 2, 0, this->frame.cols / 2, this->frame.rows)).copyTo(image_r);

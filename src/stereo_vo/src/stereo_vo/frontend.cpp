@@ -348,7 +348,7 @@ namespace stereo_vo
         {
             if (status[i])
             {
-                if (abs(kps_right[i].y - kps_left[i].y) > 60 || kps_right[i].x - kps_left[i].x > 0)
+                if (abs(kps_right[i].y - kps_left[i].y) > 50 || kps_right[i].x - kps_left[i].x > 0)
                 {
                     status[i] = false;
                     current_frame_->features_right_.push_back(nullptr);

@@ -16,13 +16,13 @@ namespace stereo_vo
         SE3 pose_;
         SE3 pose_inv_;
 
-        cv::Mat mDistCoef;
+        cv::Mat undistmap1_, undistmap2_;
 
         Camera();
 
         Camera(double fx, double fy, double cx, double cy, double baseline,
-               const SE3 &pose, const cv::Mat dist_coef)
-            : fx_(fx), fy_(fy), cx_(cx), cy_(cy), baseline_(baseline), pose_(pose), mDistCoef(dist_coef)
+               const SE3 &pose, const cv::Mat &undistmap1, cv::Mat &undistmap2)
+            : fx_(fx), fy_(fy), cx_(cx), cy_(cy), baseline_(baseline), pose_(pose), undistmap1_(undistmap1), undistmap2_(undistmap2)
         {
             pose_inv_ = pose_.inverse();
         }

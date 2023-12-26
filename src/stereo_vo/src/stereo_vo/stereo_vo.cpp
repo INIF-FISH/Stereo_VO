@@ -16,20 +16,31 @@ namespace stereo_vo
         this->frontend_ = Frontend::Ptr(new Frontend(300, 100));
         this->backend_ = Backend::Ptr(new Backend);
         this->map_ = Map::Ptr(new Map);
+        cv::stereoRectify(this->params.camera_matrix_left, this->params.distortion_coefficients_left, this->params.camera_matrix_right, this->params.distortion_coefficients_right,
+                          cv::Size(this->_frame_width / 2, this->_frame_height), this->params.rotation_of_camera_right, this->params.translation_of_camera_right, this->params.Rl, this->params.Rr, this->params.Pl, this->params.Pr,
+                          this->params.Q, cv::CALIB_ZERO_DISPARITY, 0);
+        cv::initUndistortRectifyMap(this->params.camera_matrix_left, this->params.distortion_coefficients_left, this->params.Rl, this->params.Pl, cv::Size(this->_frame_width / 2, this->_frame_height), CV_16SC2, undistmap1l, undistmap2l);
+        cv::initUndistortRectifyMap(this->params.camera_matrix_right, this->params.distortion_coefficients_right, this->params.Rr, this->params.Pr, cv::Size(this->_frame_width / 2, this->_frame_height), CV_16SC2, undistmap1r, undistmap2r);
+        std::cout << this->params.rotation_of_camera_right << std::endl;
+        this->params.rotation_of_camera_right = this->params.Rr * this->params.rotation_of_camera_right * this->params.Rl.t();
+        this->params.translation_of_camera_right = this->params.Rr * this->params.translation_of_camera_right;
+        std::cout << this->params.rotation_of_camera_right << std::endl;
+        sleep(100);
+        this->params.baseline = this->params.translation_of_camera_right.at<double>(cv::Point2i(0, 0));
         Mat33 K_1, K_2;
-        K_1 << this->params.camera_matrix_left.at<double>(0, 0), this->params.camera_matrix_left.at<double>(0, 1), this->params.camera_matrix_left.at<double>(0, 2),
-            this->params.camera_matrix_left.at<double>(1, 0), this->params.camera_matrix_left.at<double>(1, 1), this->params.camera_matrix_left.at<double>(1, 2),
-            this->params.camera_matrix_left.at<double>(2, 0), this->params.camera_matrix_left.at<double>(2, 1), this->params.camera_matrix_left.at<double>(2, 2);
-        K_2 << this->params.camera_matrix_right.at<double>(0, 0), this->params.camera_matrix_right.at<double>(0, 1), this->params.camera_matrix_right.at<double>(0, 2),
-            this->params.camera_matrix_right.at<double>(1, 0), this->params.camera_matrix_right.at<double>(1, 1), this->params.camera_matrix_right.at<double>(1, 2),
-            this->params.camera_matrix_right.at<double>(2, 0), this->params.camera_matrix_right.at<double>(2, 1), this->params.camera_matrix_right.at<double>(2, 2);
+         K_1 << this->params.Pl.at<double>(0, 0), this->params.Pl.at<double>(0, 1), this->params.Pl.at<double>(0, 2),
+            this->params.Pl.at<double>(1, 0), this->params.Pl.at<double>(1, 1), this->params.Pl.at<double>(1, 2),
+            this->params.Pl.at<double>(2, 0), this->params.Pl.at<double>(2, 1), this->params.Pl.at<double>(2, 2);
+        K_2 << this->params.Pr.at<double>(0, 0), this->params.Pr.at<double>(0, 1), this->params.Pr.at<double>(0, 2),
+            this->params.Pr.at<double>(1, 0), this->params.Pr.at<double>(1, 1), this->params.Pr.at<double>(1, 2),
+            this->params.Pr.at<double>(2, 0), this->params.Pr.at<double>(2, 1), this->params.Pr.at<double>(2, 2);
         Vec3 t_1, t_2;
         t_1 << 0.0, 0.0, 0.0;
         t_2 << this->params.translation_of_camera_right.at<double>(0, 0), this->params.translation_of_camera_right.at<double>(1, 0), this->params.translation_of_camera_right.at<double>(2, 0);
         Camera::Ptr new_camera_l(new Camera(K_1(0, 0), K_1(1, 1), K_1(0, 2), K_1(1, 2),
-                                            t_1.norm(), SE3(SO3(), t_1), this->params.distortion_coefficients_left));
+                                            t_1.norm(), SE3(SO3(), t_1), undistmap1l, undistmap2l));
         Camera::Ptr new_camera_r(new Camera(K_2(0, 0), K_2(1, 1), K_2(0, 2), K_2(1, 2),
-                                            t_2.norm(), SE3(SO3(), t_2), this->params.distortion_coefficients_right));
+                                            t_2.norm(), SE3(SO3(), t_2), undistmap1r, undistmap2r));
         this->frontend_->SetCameras(new_camera_l, new_camera_r);
         this->frontend_->SetBackend(this->backend_);
         this->frontend_->SetMap(this->map_);
@@ -60,12 +71,16 @@ namespace stereo_vo
                 std::cerr << e.what() << '\n';
             return false;
         }
+        cv::Mat frame_size;
         fs["camera_matrix_left"] >> this->params.camera_matrix_left;
         fs["camera_matrix_right"] >> this->params.camera_matrix_right;
         fs["distortion_coefficients_left"] >> this->params.distortion_coefficients_left;
         fs["distortion_coefficients_right"] >> this->params.distortion_coefficients_right;
         fs["translation_of_camera_right"] >> this->params.translation_of_camera_right;
         fs["rotation_of_camera_right"] >> this->params.rotation_of_camera_right;
+        fs["frame_size"] >> frame_size;
+        this->_frame_width = frame_size.at<int>(0, 0);
+        this->_frame_height = frame_size.at<int>(0, 1);
         this->_params_init_flag = true;
         return true;
     }

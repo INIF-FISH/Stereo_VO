@@ -65,9 +65,9 @@ namespace stereo_cam_usb
             {
                 cv::Mat image;
                 this->_StereoCamUsb->readImage();
-                if(this->if_correctImage)
+                if (this->if_correctImage)
                     this->_StereoCamUsb->correctImage();
-                if(this->if_calcTransform)
+                if (this->if_calcTransform)
                     this->_StereoCamUsb->processSGBM();
                 this->_StereoCamUsb->getImage(image);
                 if (image.empty())
@@ -108,7 +108,7 @@ namespace stereo_cam_usb
                 RCLCPP_INFO(this->get_logger(), "Set CAP_FPS to %d !", this->camera_fps);
                 _param_change_flag = true;
             }
-            if(this->_StereoCamUsb->get_frame_exposure() != this->camera_exposure)
+            if (this->_StereoCamUsb->get_frame_exposure() != this->camera_exposure)
             {
                 RCLCPP_INFO(this->get_logger(), "Set CAP_PROP_EXPOSURE to %d !", this->camera_exposure);
                 _param_change_flag = true;
