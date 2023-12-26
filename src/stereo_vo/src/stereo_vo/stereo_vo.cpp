@@ -21,11 +21,8 @@ namespace stereo_vo
                           this->params.Q, cv::CALIB_ZERO_DISPARITY, 0);
         cv::initUndistortRectifyMap(this->params.camera_matrix_left, this->params.distortion_coefficients_left, this->params.Rl, this->params.Pl, cv::Size(this->_frame_width / 2, this->_frame_height), CV_16SC2, undistmap1l, undistmap2l);
         cv::initUndistortRectifyMap(this->params.camera_matrix_right, this->params.distortion_coefficients_right, this->params.Rr, this->params.Pr, cv::Size(this->_frame_width / 2, this->_frame_height), CV_16SC2, undistmap1r, undistmap2r);
-        std::cout << this->params.rotation_of_camera_right << std::endl;
         this->params.rotation_of_camera_right = this->params.Rr * this->params.rotation_of_camera_right * this->params.Rl.t();
         this->params.translation_of_camera_right = this->params.Rr * this->params.translation_of_camera_right;
-        std::cout << this->params.rotation_of_camera_right << std::endl;
-        sleep(100);
         this->params.baseline = this->params.translation_of_camera_right.at<double>(cv::Point2i(0, 0));
         Mat33 K_1, K_2;
          K_1 << this->params.Pl.at<double>(0, 0), this->params.Pl.at<double>(0, 1), this->params.Pl.at<double>(0, 2),
