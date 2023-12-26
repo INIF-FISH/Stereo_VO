@@ -18,6 +18,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/transform_broadcaster.h" 
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
 
 namespace stereo_vo
 {
@@ -36,6 +38,7 @@ namespace stereo_vo
         std::shared_ptr<image_transport::Subscriber> _image_sub;
         std::shared_ptr<image_transport::Publisher> _image_pub;
         std::shared_ptr<tf2_ros::TransformBroadcaster> _tf_pub;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _pcl_pub;
 
     private:
         std::deque<sensor_msgs::msg::Image::ConstSharedPtr> image_deque_;

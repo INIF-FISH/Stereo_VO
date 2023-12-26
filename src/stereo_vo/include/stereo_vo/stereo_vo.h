@@ -14,7 +14,6 @@ namespace stereo_vo
         int _frame_width = 0, _frame_height = 0;
         cv::Mat undistmap1l, undistmap2l, undistmap1r, undistmap2r;
 
-        bool _is_calcTransform_flag = false;
         bool _params_init_flag = false;
 
         Frontend::Ptr frontend_ = nullptr;
@@ -32,12 +31,11 @@ namespace stereo_vo
         void stop();
         bool read_param(const std::string &path, const int frame_width, const int frame_height);
         bool _is_params_inited();
-        void calcTransform();
-        bool _is_calced_Transform();
 
     public:
         bool addFrame(cv::Mat &img_l, cv::Mat &img_r);
         bool getPose(Eigen::Matrix3d &rotation_matrix, Eigen::Vector3d &translation_vector);
+        void GetMapPoints(Map::LandmarksType &points);
     };
 } // namespace stereo_vo
 

@@ -26,7 +26,7 @@ namespace stereo_vo
         void SetBackend(std::shared_ptr<Backend> backend) { backend_ = backend; }
 
         bool GetPose(Eigen::Matrix4d &pose);
-        
+
         FrontendStatus GetStatus() const { return status_; }
 
         void SetCameras(Camera::Ptr left, Camera::Ptr right)

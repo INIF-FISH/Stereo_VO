@@ -40,4 +40,18 @@ namespace stereo_vo
     {
         return camera2world(pixel2camera(p_p, depth), T_c_w);
     }
+
+    void Camera::UndistortImage(cv::Mat &src, cv::Mat &dst)
+    {
+        cv::Mat distortImg = src.clone();
+
+        cv::Mat K_cv = cv::Mat::zeros(3, 3, CV_32F);
+        K_cv.at<float>(0, 0) = fx_;
+        K_cv.at<float>(0, 2) = cx_;
+        K_cv.at<float>(1, 1) = fy_;
+        K_cv.at<float>(1, 2) = cy_;
+        K_cv.at<float>(2, 2) = 1.0;
+
+        cv::undistort(distortImg, dst, K_cv, mDistCoef);
+    }
 } // namespace stereo_vo

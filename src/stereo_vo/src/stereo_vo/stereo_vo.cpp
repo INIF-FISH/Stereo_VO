@@ -12,7 +12,7 @@ namespace stereo_vo
 
     void StereoVO::init()
     {
-        assert(_params_init_flag && _is_calcTransform_flag);
+        assert(_params_init_flag);
         this->frontend_ = Frontend::Ptr(new Frontend(300, 100));
         this->backend_ = Backend::Ptr(new Backend);
         this->map_ = Map::Ptr(new Map);
@@ -27,9 +27,9 @@ namespace stereo_vo
         t_1 << 0.0, 0.0, 0.0;
         t_2 << this->params.translation_of_camera_right.at<double>(0, 0), this->params.translation_of_camera_right.at<double>(1, 0), this->params.translation_of_camera_right.at<double>(2, 0);
         Camera::Ptr new_camera_l(new Camera(K_1(0, 0), K_1(1, 1), K_1(0, 2), K_1(1, 2),
-                                            t_1.norm(), SE3(SO3(), t_1)));
+                                            t_1.norm(), SE3(SO3(), t_1), this->params.distortion_coefficients_left));
         Camera::Ptr new_camera_r(new Camera(K_2(0, 0), K_2(1, 1), K_2(0, 2), K_2(1, 2),
-                                            t_2.norm(), SE3(SO3(), t_2)));
+                                            t_2.norm(), SE3(SO3(), t_2), this->params.distortion_coefficients_right));
         this->frontend_->SetCameras(new_camera_l, new_camera_r);
         this->frontend_->SetBackend(this->backend_);
         this->frontend_->SetMap(this->map_);
@@ -75,21 +75,6 @@ namespace stereo_vo
         return _params_init_flag;
     }
 
-    void StereoVO::calcTransform()
-    {
-        cv::stereoRectify(this->params.camera_matrix_left, this->params.distortion_coefficients_left, this->params.camera_matrix_right, this->params.distortion_coefficients_right,
-                          cv::Size(this->_frame_width / 2, this->_frame_height), this->params.rotation_of_camera_right, this->params.translation_of_camera_right, this->params.Rl, this->params.Rr, this->params.Pl, this->params.Pr,
-                          this->params.Q, cv::CALIB_ZERO_DISPARITY, 0);
-        initUndistortRectifyMap(this->params.camera_matrix_left, this->params.distortion_coefficients_left, this->params.Rl, this->params.Pl, cv::Size(this->_frame_width / 2, this->_frame_height), CV_16SC2, undistmap1l, undistmap2l);
-        initUndistortRectifyMap(this->params.camera_matrix_right, this->params.distortion_coefficients_right, this->params.Rr, this->params.Pr, cv::Size(this->_frame_width / 2, this->_frame_height), CV_16SC2, undistmap1r, undistmap2r);
-        this->_is_calcTransform_flag = true;
-    }
-
-    bool StereoVO::_is_calced_Transform()
-    {
-        return _is_calcTransform_flag;
-    }
-
     bool StereoVO::addFrame(cv::Mat &img_l, cv::Mat &img_r)
     {
         if (img_l.empty() || img_r.empty())
@@ -115,5 +100,10 @@ namespace stereo_vo
             return true;
         }
         return false;
+    }
+
+    void StereoVO::GetMapPoints(Map::LandmarksType &points)
+    {
+        points = this->map_->GetActiveMapPoints();
     }
 } // namespace stereo_vo

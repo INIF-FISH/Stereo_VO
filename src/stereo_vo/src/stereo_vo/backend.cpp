@@ -55,11 +55,8 @@ namespace stereo_vo
             vertex_pose->setId(kf->keyframe_id_);
             vertex_pose->setEstimate(kf->Pose());
             optimizer.addVertex(vertex_pose);
-            if (kf->keyframe_id_ > max_kf_id)
-            {
-                max_kf_id = kf->keyframe_id_;
-            }
 
+            max_kf_id = std::max(max_kf_id,kf->keyframe_id_);
             vertices.insert({kf->keyframe_id_, vertex_pose});
         }
 
@@ -131,13 +128,12 @@ namespace stereo_vo
             }
         }
 
-        optimizer.initializeOptimization();
-        optimizer.optimize(10);
-
         int cnt_outlier = 0, cnt_inlier = 0;
         int iteration = 0;
         while (iteration < 5)
         {
+            optimizer.initializeOptimization();
+            optimizer.optimize(10);
             cnt_outlier = 0;
             cnt_inlier = 0;
 
@@ -170,6 +166,7 @@ namespace stereo_vo
             {
                 ef.second->is_outlier_ = true;
                 ef.second->map_point_.lock()->RemoveObservation(ef.second);
+                ef.second->map_point_.reset();
             }
             else
             {

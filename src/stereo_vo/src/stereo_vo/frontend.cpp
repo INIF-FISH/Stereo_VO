@@ -11,6 +11,8 @@ namespace stereo_vo
 
     bool Frontend::AddFrame(stereo_vo::Frame::Ptr frame)
     {
+        this->camera_left_->UndistortImage(frame->left_img_, frame->left_img_);
+        this->camera_right_->UndistortImage(frame->right_img_, frame->right_img_);
         current_frame_ = frame;
         switch (status_)
         {
@@ -32,7 +34,7 @@ namespace stereo_vo
 
     bool Frontend::GetPose(Eigen::Matrix4d &pose)
     {
-        if(current_frame_)
+        if (current_frame_)
         {
             pose = current_frame_->Pose().matrix();
             return true;
@@ -346,7 +348,7 @@ namespace stereo_vo
         {
             if (status[i])
             {
-                if (abs(kps_right[i].y - kps_left[i].y) > 10 || kps_right[i].x - kps_left[i].x > 0)
+                if (abs(kps_right[i].y - kps_left[i].y) > 60 || kps_right[i].x - kps_left[i].x > 0)
                 {
                     status[i] = false;
                     current_frame_->features_right_.push_back(nullptr);

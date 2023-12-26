@@ -20,6 +20,7 @@ namespace stereo_vo
                                                                                                               std::bind(&StereoVONode::imageCallback, this, _1), "raw", rmw_qos));
         this->_image_pub = std::make_shared<image_transport::Publisher>(image_transport::create_publisher(this, "/stereo_vo/pub_image_raw", rmw_qos));
         this->_tf_pub = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+        this->_pcl_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("/stereo_vo/point_cloud", qos);
         RCLCPP_INFO(this->get_logger(), "Register callback for stereo_usb camera ...");
 
         this->_StereoVO = std::make_shared<StereoVO>(StereoVO());
@@ -67,13 +68,8 @@ namespace stereo_vo
                     RCLCPP_WARN_ONCE(this->get_logger(), "Failed to read camera params !");
                     continue;
                 }
-                RCLCPP_INFO(this->get_logger(), "Success to read camera params !");
-            }
-            if (!this->_StereoVO->_is_calced_Transform())
-            {
-                this->_StereoVO->calcTransform();
                 this->_StereoVO->init();
-                RCLCPP_INFO(this->get_logger(), "Success to init !");
+                RCLCPP_INFO(this->get_logger(), "Success to read camera params !");
             }
             if (this->_StereoVO->addFrame(image_left, image_right))
             {
@@ -88,15 +84,50 @@ namespace stereo_vo
                     transform_stamped.header.frame_id = "world";
                     transform_stamped.child_frame_id = "odom";
 
-                    transform_stamped.transform.translation.x = -translation_vector.z();
-                    transform_stamped.transform.translation.y = translation_vector.x();
-                    transform_stamped.transform.translation.z = translation_vector.y();
+                    transform_stamped.transform.translation.x = -translation_vector.z() / 1000.;
+                    transform_stamped.transform.translation.y = translation_vector.x() / 1000.;
+                    transform_stamped.transform.translation.z = translation_vector.y() / 1000.;
                     transform_stamped.transform.rotation.x = -rotation_quaternion.z();
                     transform_stamped.transform.rotation.y = rotation_quaternion.x();
                     transform_stamped.transform.rotation.z = rotation_quaternion.y();
                     transform_stamped.transform.rotation.w = rotation_quaternion.w();
 
                     this->_tf_pub->sendTransform(transform_stamped);
+
+                    Map::LandmarksType points;
+                    this->_StereoVO->GetMapPoints(points);
+                    sensor_msgs::msg::PointCloud2 point_cloud_msg;
+                    point_cloud_msg.header.frame_id = "world";
+                    point_cloud_msg.height = 1;
+                    point_cloud_msg.width = points.size();
+                    point_cloud_msg.is_dense = true;
+                    sensor_msgs::PointCloud2Modifier modifier(point_cloud_msg);
+                    modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
+
+                    sensor_msgs::PointCloud2Iterator<float> iter_x(point_cloud_msg, "x");
+                    sensor_msgs::PointCloud2Iterator<float> iter_y(point_cloud_msg, "y");
+                    sensor_msgs::PointCloud2Iterator<float> iter_z(point_cloud_msg, "z");
+                    sensor_msgs::PointCloud2Iterator<uint8_t> iter_r(point_cloud_msg, "r");
+                    sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(point_cloud_msg, "g");
+                    sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(point_cloud_msg, "b");
+
+                    for (auto point : points)
+                    {
+                        *iter_x = static_cast<float>(point.second->Pos()(2, 0)) / 1000.;
+                        *iter_y = -static_cast<float>(point.second->Pos()(0, 0)) / 1000.;
+                        *iter_z = -static_cast<float>(point.second->Pos()(1, 0)) / 1000.;
+                        *iter_r = 255;
+                        *iter_g = 0;
+                        *iter_b = 0;
+
+                        ++iter_x;
+                        ++iter_y;
+                        ++iter_z;
+                        ++iter_r;
+                        ++iter_g;
+                        ++iter_b;
+                    }
+                    this->_pcl_pub->publish(point_cloud_msg);
                 }
             }
         }

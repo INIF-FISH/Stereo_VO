@@ -13,7 +13,7 @@ namespace stereo_cam_usb
         this->camera_index = this->declare_parameter<int>("camera_index", 0);
         this->camera_params_path = this->declare_parameter<std::string>("camera_params_path", package_share_directory + "/params/camera.yaml");
         this->if_calcTransform = this->declare_parameter<bool>("if_calcTransform", false);
-        this->if_correctImage = this->declare_parameter<bool>("if_correctImage", true);
+        this->if_correctImage = this->declare_parameter<bool>("if_correctImage", false);
         this->camera_width = this->declare_parameter<int>("camera_width", 2560);
         this->camera_height = this->declare_parameter<int>("camera_height", 720);
         this->camera_fps = this->declare_parameter<int>("camera_fps", 60);

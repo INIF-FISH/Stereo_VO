@@ -16,11 +16,13 @@ namespace stereo_vo
         SE3 pose_;
         SE3 pose_inv_;
 
+        cv::Mat mDistCoef;
+
         Camera();
 
         Camera(double fx, double fy, double cx, double cy, double baseline,
-               const SE3 &pose)
-            : fx_(fx), fy_(fy), cx_(cx), cy_(cy), baseline_(baseline), pose_(pose)
+               const SE3 &pose, const cv::Mat dist_coef)
+            : fx_(fx), fy_(fy), cx_(cx), cy_(cy), baseline_(baseline), pose_(pose), mDistCoef(dist_coef)
         {
             pose_inv_ = pose_.inverse();
         }
@@ -45,6 +47,8 @@ namespace stereo_vo
         Vec3 pixel2world(const Vec2 &p_p, const SE3 &T_c_w, double depth = 1);
 
         Vec2 world2pixel(const Vec3 &p_w, const SE3 &T_c_w);
+
+        void UndistortImage(cv::Mat &src, cv::Mat &dst);
     };
 } // namespace stereo_vo
 
