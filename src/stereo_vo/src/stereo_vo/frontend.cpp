@@ -116,13 +116,12 @@ namespace stereo_vo
                     camera_right_->pixel2camera(
                         Vec2(current_frame_->features_right_[i]->position_.pt.x,
                              current_frame_->features_right_[i]->position_.pt.y))};
-                Vec3 pworld = Vec3::Zero();
+                Vec3 pcamera = Vec3::Zero();
 
-                if (triangulation(poses, points, pworld) && pworld[2] > 0)
+                if (triangulation(poses, points, pcamera) && pcamera[2] > 0 && pcamera[2] < 5000)
                 {
                     auto new_map_point = MapPoint::CreateNewMappoint();
-                    pworld = current_pose_Twc * pworld;
-                    new_map_point->SetPos(pworld);
+                    new_map_point->SetPos(current_pose_Twc * pcamera);
                     new_map_point->AddObservation(
                         current_frame_->features_left_[i]);
                     new_map_point->AddObservation(
@@ -181,9 +180,9 @@ namespace stereo_vo
 
         const double chi2_th = 5.991;
         int cnt_outlier = 0;
-        for (int iteration = 0; iteration < 4; ++iteration)
+        int max_iteration = 4;
+        for (int iteration = 0; iteration < max_iteration; ++iteration)
         {
-            vertex_pose->setEstimate(current_frame_->Pose());
             optimizer.initializeOptimization();
             optimizer.optimize(10);
             cnt_outlier = 0;
@@ -205,9 +204,8 @@ namespace stereo_vo
                 {
                     features[i]->is_outlier_ = false;
                     e->setLevel(0);
-                };
-
-                if (iteration == 2)
+                }
+                if (max_iteration - iteration == 2)
                 {
                     e->setRobustKernel(nullptr);
                 }

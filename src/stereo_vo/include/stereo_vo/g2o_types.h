@@ -15,6 +15,8 @@
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/solvers/csparse/linear_solver_csparse.h>
 #include <g2o/solvers/dense/linear_solver_dense.h>
+#include <g2o/solvers/eigen/linear_solver_eigen.h>
+#include <g2o/types/slam3d/types_slam3d.h>
 
 namespace stereo_vo
 {
@@ -152,6 +154,26 @@ namespace stereo_vo
         Mat33 _K;
         SE3 _cam_ext;
     };
+
+    class EdgePoseGraph : public g2o::BaseBinaryEdge<6, SE3, VertexPose, VertexPose>
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        virtual void computeError() override
+        {
+            const VertexPose *vertex0 = static_cast<VertexPose *>(_vertices[0]);
+            const VertexPose *vertex1 = static_cast<VertexPose *>(_vertices[1]);
+            SE3 v0 = vertex0->estimate();
+            SE3 v1 = vertex1->estimate();
+            _error = (_measurement.inverse() * v0 * v1.inverse()).log();
+        }
+
+        virtual bool read(std::istream &in) override { return true; }
+
+        virtual bool write(std::ostream &out) const override { return true; }
+    };
+
 } // namespace stereo_vo
 
 #endif // _G2O_TYPES_H

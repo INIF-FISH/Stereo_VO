@@ -8,6 +8,7 @@ namespace stereo_vo
     struct Frame;
     struct MapPoint;
     struct Feature;
+    struct KeyFrame;
 
     struct greaterThanPtr
     {
@@ -100,6 +101,7 @@ namespace stereo_vo
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         typedef std::shared_ptr<Feature> Ptr;
 
+        std::weak_ptr<KeyFrame> _KF;
         std::weak_ptr<Frame> frame_;
         cv::KeyPoint position_;
         DescType descriptor;

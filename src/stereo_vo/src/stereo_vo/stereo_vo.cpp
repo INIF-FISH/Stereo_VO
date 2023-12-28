@@ -109,6 +109,7 @@ namespace stereo_vo
                 pose(1, 0), pose(1, 1), pose(1, 2),
                 pose(2, 0), pose(2, 1), pose(2, 2);
             translation_vector << pose(0, 3), pose(1, 3), pose(2, 3);
+            translation_vector = rotation_matrix.inverse() * translation_vector;
             return true;
         }
         return false;
