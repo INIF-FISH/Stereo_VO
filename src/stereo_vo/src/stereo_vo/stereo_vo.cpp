@@ -117,6 +117,6 @@ namespace stereo_vo
 
     void StereoVO::GetMapPoints(Map::LandmarksType &points)
     {
-        points = this->map_->GetActiveMapPoints();
+        points = this->map_->GetAllMapPoints();
     }
 } // namespace stereo_vo
