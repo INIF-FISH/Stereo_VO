@@ -21,6 +21,8 @@ namespace stereo_vo
 
         bool AddFrame(Frame::Ptr frame);
 
+        void SetMaxDepth(const double &value);
+
         void SetMap(Map::Ptr map) { map_ = map; }
 
         void SetBackend(std::shared_ptr<Backend> backend) { backend_ = backend; }
@@ -69,6 +71,7 @@ namespace stereo_vo
         int num_features_tracking_ = 50;
         int num_features_tracking_bad_ = 20;
         int num_features_needed_for_keyframe_ = 80;
+        double max_depth = 0.;
     };
 } // namespace stereo_vo
 

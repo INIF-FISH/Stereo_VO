@@ -35,6 +35,11 @@ namespace stereo_vo
         return true;
     }
 
+    void Frontend::SetMaxDepth(const double &value)
+    {
+        this->max_depth = value;
+    }
+
     bool Frontend::GetPose(Eigen::Matrix4d &pose)
     {
         if (current_frame_)
@@ -415,7 +420,7 @@ namespace stereo_vo
                          current_frame_->features_right_[i]->position_.pt.y))};
             Vec3 pworld = Vec3::Zero();
 
-            if (triangulation(poses, points, pworld) && pworld[2] > 0 && pworld[2] < 10000)
+            if (triangulation(poses, points, pworld) && pworld[2] > 0 && pworld[2] < this->max_depth)
             {
                 auto new_map_point = MapPoint::CreateNewMappoint();
                 new_map_point->SetPos(pworld);
@@ -436,7 +441,6 @@ namespace stereo_vo
 
     bool Frontend::Reset()
     {
-
         return true;
     }
 } // namespace stereo_vo

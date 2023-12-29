@@ -17,7 +17,7 @@ namespace stereo_cam_usb
         this->camera_width = this->declare_parameter<int>("camera_width", 2560);
         this->camera_height = this->declare_parameter<int>("camera_height", 720);
         this->camera_fps = this->declare_parameter<int>("camera_fps", 60);
-        this->camera_exposure = this->declare_parameter<int>("camera_exposure", 50);
+        this->camera_exposure = this->declare_parameter<int>("camera_exposure", 200);
         this->camera_gain = this->declare_parameter<int>("camera_gain", 1);
         this->_cameraPubThread = std::thread(std::bind(&StereoCamUsbNode::readImageAndPub, this));
         this->timer_ = this->create_wall_timer(100ms, std::bind(&StereoCamUsbNode::respond, this));

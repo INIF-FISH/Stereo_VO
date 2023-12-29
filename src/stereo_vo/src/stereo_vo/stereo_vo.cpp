@@ -25,7 +25,7 @@ namespace stereo_vo
         this->params.translation_of_camera_right = this->params.Rr * this->params.translation_of_camera_right;
         this->params.baseline = this->params.translation_of_camera_right.at<double>(cv::Point2i(0, 0));
         Mat33 K_1, K_2;
-         K_1 << this->params.Pl.at<double>(0, 0), this->params.Pl.at<double>(0, 1), this->params.Pl.at<double>(0, 2),
+        K_1 << this->params.Pl.at<double>(0, 0), this->params.Pl.at<double>(0, 1), this->params.Pl.at<double>(0, 2),
             this->params.Pl.at<double>(1, 0), this->params.Pl.at<double>(1, 1), this->params.Pl.at<double>(1, 2),
             this->params.Pl.at<double>(2, 0), this->params.Pl.at<double>(2, 1), this->params.Pl.at<double>(2, 2);
         K_2 << this->params.Pr.at<double>(0, 0), this->params.Pr.at<double>(0, 1), this->params.Pr.at<double>(0, 2),
@@ -38,6 +38,10 @@ namespace stereo_vo
                                             t_1.norm(), SE3(SO3(), t_1), undistmap1l, undistmap2l));
         Camera::Ptr new_camera_r(new Camera(K_2(0, 0), K_2(1, 1), K_2(0, 2), K_2(1, 2),
                                             t_2.norm(), SE3(SO3(), t_2), undistmap1r, undistmap2r));
+
+        double focal_length = this->params.camera_matrix_left.at<double>(0, 0);
+        double max_depth = (this->params.baseline * focal_length) / (this->params.baseline / (double(this->_frame_width) / 2.)) * 0.01;
+        this->frontend_->SetMaxDepth(max_depth);
         this->frontend_->SetCameras(new_camera_l, new_camera_r);
         this->frontend_->SetBackend(this->backend_);
         this->frontend_->SetMap(this->map_);
