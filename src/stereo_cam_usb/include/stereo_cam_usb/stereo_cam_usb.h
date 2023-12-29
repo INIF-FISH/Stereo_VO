@@ -59,6 +59,7 @@ namespace stereo_cam_usb
         int _frame_height = 0;
         int _frame_exposure = 0;
         int _frame_fps = 0;
+        int _frame_gain = 0;
 
         bool _is_calcTransform_flag = false;
         cv::Mat undistmap1l, undistmap2l, undistmap1r, undistmap2r;
@@ -84,6 +85,7 @@ namespace stereo_cam_usb
         int getCAP_PROP_EXPOSURE();
         int getCAP_PROP_FOURCC();
         int getCAP_PROP_FPS();
+        int getCAP_PROP_GAIN();
 
         void setCAP_PROP_FRAME_WIDTH(const int value);
         void setCAP_PROP_FRAME_HEIGHT(const int value);
@@ -91,11 +93,13 @@ namespace stereo_cam_usb
         void setCAP_PROP_EXPOSURE(const int value);
         void setCAP_PROP_FOURCC(char c1, char c2, char c3, char c4);
         void setCAP_PROP_FPS(const int value);
+        void setCAP_PROP_GAIN(const int value);
 
         int get_frame_width();
         int get_frame_height();
         int get_frame_exposure();
         int get_frame_fps();
+        int get_frame_gain();
 
         void release();
     };

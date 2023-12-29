@@ -6,7 +6,7 @@ namespace stereo_vo
     {
         this->num_features_init_ = num_features_init;
         this->num_features_ = num_features;
-        this->_gftt = cv::GFTTDetector::create(num_features);
+        this->_gftt = cv::GFTTDetector::create(num_features, 0.01, 1.0, 5, false);
     }
 
     bool Frontend::AddFrame(stereo_vo::Frame::Ptr frame)
@@ -14,6 +14,9 @@ namespace stereo_vo
         this->camera_left_->UndistortImage(frame->left_img_, frame->left_img_);
         this->camera_right_->UndistortImage(frame->right_img_, frame->right_img_);
         current_frame_ = frame;
+        cv::imshow("tl", frame->left_img_);
+        cv::imshow("tr", frame->right_img_);
+        cv::waitKey(1);
         switch (status_)
         {
         case FrontendStatus::INITING:
@@ -64,9 +67,12 @@ namespace stereo_vo
         else
         {
             status_ = FrontendStatus::LOST;
+            std::cout << "========================================================" << std::endl;
+            std::cout << "==========================LOST==========================" << std::endl;
+            std::cout << "========================================================" << std::endl;
         }
-
-        InsertKeyframe();
+        if (status_ != FrontendStatus::LOST)
+            InsertKeyframe();
         relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
         return true;
     }
@@ -118,7 +124,7 @@ namespace stereo_vo
                              current_frame_->features_right_[i]->position_.pt.y))};
                 Vec3 pcamera = Vec3::Zero();
 
-                if (triangulation(poses, points, pcamera) && pcamera[2] > 0 && pcamera[2] < 5000)
+                if (triangulation(poses, points, pcamera) && pcamera[2] > 0)
                 {
                     auto new_map_point = MapPoint::CreateNewMappoint();
                     new_map_point->SetPos(current_pose_Twc * pcamera);
@@ -142,7 +148,7 @@ namespace stereo_vo
         typedef g2o::BlockSolver_6_3 BlockSolverType;
         typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType>
             LinearSolverType;
-        auto solver = new g2o::OptimizationAlgorithmLevenberg(
+        auto solver = new g2o::OptimizationAlgorithmGaussNewton(
             std::make_unique<BlockSolverType>(
                 std::make_unique<LinearSolverType>()));
         g2o::SparseOptimizer optimizer;
@@ -180,7 +186,7 @@ namespace stereo_vo
 
         const double chi2_th = 5.991;
         int cnt_outlier = 0;
-        int max_iteration = 4;
+        int max_iteration = 8;
         for (int iteration = 0; iteration < max_iteration; ++iteration)
         {
             optimizer.initializeOptimization();
@@ -260,6 +266,9 @@ namespace stereo_vo
 
         int num_good_pts = 0;
 
+        cv::Mat show = current_frame_->left_img_.clone();
+        cv::cvtColor(show, show, cv::COLOR_GRAY2BGR);
+
         for (size_t i = 0; i < status.size(); ++i)
         {
             if (status[i])
@@ -269,8 +278,13 @@ namespace stereo_vo
                 feature->map_point_ = last_frame_->features_left_[i]->map_point_;
                 current_frame_->features_left_.push_back(feature);
                 num_good_pts++;
+                cv::line(show, kps_current[i], kps_last[i], cv::Scalar(0, 0, 255));
+                cv::circle(show, kps_current[i], 2, cv::Scalar(0, 255, 0));
             }
         }
+
+        cv::imshow("Track", show);
+        cv::waitKey(1);
         return num_good_pts;
     }
 
@@ -309,6 +323,11 @@ namespace stereo_vo
                 Feature::Ptr(new Feature(current_frame_, kp)));
             cnt_detected++;
         }
+        cv::Mat show = current_frame_->left_img_.clone();
+        cv::cvtColor(show, show, cv::COLOR_GRAY2BGR);
+        cv::drawKeypoints(show, keypoints, show, cv::Scalar(255, 0, 0));
+        cv::imshow("Detect", show);
+        cv::waitKey(1);
         std::cout << "Detect " << cnt_detected << " new features" << std::endl;
         return cnt_detected;
     }
@@ -341,12 +360,15 @@ namespace stereo_vo
                              0.01),
             cv::OPTFLOW_USE_INITIAL_FLOW);
 
+        cv::Mat show = current_frame_->right_img_.clone();
+        cv::cvtColor(show, show, cv::COLOR_GRAY2BGR);
+
         int num_good_pts = 0;
         for (size_t i = 0; i < status.size(); ++i)
         {
             if (status[i])
             {
-                if (abs(kps_right[i].y - kps_left[i].y) > 50 || kps_right[i].x - kps_left[i].x > 0)
+                if (abs(kps_right[i].y - kps_left[i].y) > 20 || kps_right[i].x - kps_left[i].x > 0)
                 {
                     status[i] = false;
                     current_frame_->features_right_.push_back(nullptr);
@@ -357,12 +379,17 @@ namespace stereo_vo
                 feat->is_on_left_image_ = false;
                 current_frame_->features_right_.push_back(feat);
                 num_good_pts++;
+                cv::line(show, kps_right[i], kps_left[i], cv::Scalar(0, 0, 255));
+                cv::circle(show, kps_right[i], 2, cv::Scalar(0, 255, 0));
             }
             else
             {
                 current_frame_->features_right_.push_back(nullptr);
             }
         }
+
+        cv::imshow("Detect Right", show);
+        cv::waitKey(1);
 
         std::cout << "Find " << num_good_pts << " in the right image." << std::endl;
 
@@ -386,7 +413,7 @@ namespace stereo_vo
                          current_frame_->features_right_[i]->position_.pt.y))};
             Vec3 pworld = Vec3::Zero();
 
-            if (triangulation(poses, points, pworld) && pworld[2] > 0)
+            if (triangulation(poses, points, pworld) && pworld[2] > 0 && pworld[2] < 10000)
             {
                 auto new_map_point = MapPoint::CreateNewMappoint();
                 new_map_point->SetPos(pworld);

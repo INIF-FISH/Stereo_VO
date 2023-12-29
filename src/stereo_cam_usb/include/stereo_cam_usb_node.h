@@ -33,6 +33,7 @@ namespace stereo_cam_usb
         int camera_height = 720;
         int camera_fps = 60;
         int camera_exposure = 100;
+        int camera_gain = 100;
         bool if_calcTransform = false;
         bool if_correctImage = false;
 

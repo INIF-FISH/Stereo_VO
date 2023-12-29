@@ -132,6 +132,12 @@ namespace stereo_cam_usb
         return this->cap->get(cv::CAP_PROP_FPS);
     }
 
+    int StereoCamUsb::getCAP_PROP_GAIN()
+    {
+        assert(this->cap != nullptr);
+        return this->cap->get(cv::CAP_PROP_GAIN);
+    }
+
     void StereoCamUsb::setCAP_PROP_FRAME_WIDTH(const int value)
     {
         assert(this->cap != nullptr);
@@ -172,6 +178,13 @@ namespace stereo_cam_usb
         this->cap->set(cv::CAP_PROP_FPS, value);
         this->_frame_fps = value;
     }
+    
+    void StereoCamUsb::setCAP_PROP_GAIN(const int value)
+    {
+        assert(this->cap != nullptr);
+        this->cap->set(cv::CAP_PROP_GAIN, value);
+        this->_frame_gain = value;
+    }
 
     void StereoCamUsb::release()
     {
@@ -196,6 +209,11 @@ namespace stereo_cam_usb
     int StereoCamUsb::get_frame_fps()
     {
         return this->_frame_fps;
+    }
+
+    int StereoCamUsb::get_frame_gain()
+    {
+        return this->_frame_gain;
     }
 
 } // namespace stereo_cam_usb

@@ -17,7 +17,8 @@ namespace stereo_cam_usb
         this->camera_width = this->declare_parameter<int>("camera_width", 2560);
         this->camera_height = this->declare_parameter<int>("camera_height", 720);
         this->camera_fps = this->declare_parameter<int>("camera_fps", 60);
-        this->camera_exposure = this->declare_parameter<int>("camera_exposure", 50);
+        this->camera_exposure = this->declare_parameter<int>("camera_exposure", 20);
+        this->camera_gain = this->declare_parameter<int>("camera_gain", 1);
         this->_cameraPubThread = std::thread(std::bind(&StereoCamUsbNode::readImageAndPub, this));
         this->timer_ = this->create_wall_timer(100ms, std::bind(&StereoCamUsbNode::respond, this));
         this->_image_pub = std::make_shared<image_transport::Publisher>(image_transport::create_publisher(this, "stereo_cam_usb/image_raw", qos.get_rmw_qos_profile()));
@@ -38,6 +39,7 @@ namespace stereo_cam_usb
         this->_StereoCamUsb->setCAP_PROP_FRAME_HEIGHT(this->camera_height);
         this->_StereoCamUsb->setCAP_PROP_FPS(this->camera_fps);
         this->_StereoCamUsb->setCAP_PROP_EXPOSURE(this->camera_exposure);
+        this->_StereoCamUsb->setCAP_PROP_GAIN(this->camera_gain);
         if (!this->_StereoCamUsb->read_params(this->camera_params_path))
         {
             RCLCPP_ERROR(this->get_logger(), "Failed to read params for camera index %d !", this->camera_index);
@@ -87,9 +89,10 @@ namespace stereo_cam_usb
         this->get_parameter("camera_width", this->camera_width);
         this->get_parameter("camera_height", this->camera_height);
         this->get_parameter("camera_fps", this->camera_fps);
+        this->get_parameter("camera_gain", this->camera_gain);
         this->get_parameter("camera_exposure", this->camera_exposure);
-        this->get_parameter("if_calcTransform", this->if_calcTransform);
         this->get_parameter("if_correctImage", this->if_correctImage);
+        this->get_parameter("if_calcTransform", this->if_calcTransform);
         bool _param_change_flag = false;
         if (this->_camera_alive_flag)
         {
@@ -111,6 +114,11 @@ namespace stereo_cam_usb
             if (this->_StereoCamUsb->get_frame_exposure() != this->camera_exposure)
             {
                 RCLCPP_INFO(this->get_logger(), "Set CAP_PROP_EXPOSURE to %d !", this->camera_exposure);
+                _param_change_flag = true;
+            }
+            if(this->_StereoCamUsb->get_frame_gain() != this->camera_gain)
+            {
+                RCLCPP_INFO(this->get_logger(), "Set CAP_PROP_GAIN to %d !", this->camera_gain);
                 _param_change_flag = true;
             }
             if (_param_change_flag)
