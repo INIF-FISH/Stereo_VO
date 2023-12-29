@@ -13,7 +13,7 @@ namespace stereo_vo
     void StereoVO::init()
     {
         assert(_params_init_flag);
-        this->frontend_ = Frontend::Ptr(new Frontend(300, 100));
+        this->frontend_ = Frontend::Ptr(new Frontend(200, 100));
         this->backend_ = Backend::Ptr(new Backend);
         this->map_ = Map::Ptr(new Map);
         cv::stereoRectify(this->params.camera_matrix_left, this->params.distortion_coefficients_left, this->params.camera_matrix_right, this->params.distortion_coefficients_right,

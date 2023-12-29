@@ -148,9 +148,11 @@ namespace stereo_vo
         typedef g2o::BlockSolver_6_3 BlockSolverType;
         typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType>
             LinearSolverType;
-        auto solver = new g2o::OptimizationAlgorithmGaussNewton(
+        auto solver = new g2o::OptimizationAlgorithmLevenberg(
             std::make_unique<BlockSolverType>(
                 std::make_unique<LinearSolverType>()));
+        solver->setUserLambdaInit(1e-6);
+        solver->setMaxTrialsAfterFailure(10);
         g2o::SparseOptimizer optimizer;
         optimizer.setAlgorithm(solver);
 
