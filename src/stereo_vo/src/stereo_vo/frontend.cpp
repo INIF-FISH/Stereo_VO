@@ -271,6 +271,9 @@ namespace stereo_vo
                              0.01),
             cv::OPTFLOW_USE_INITIAL_FLOW);
 
+        cv::Mat inliersMask;
+        cv::Mat H = cv::findHomography(kps_last, kps_current, inliersMask, cv::RANSAC, 3.0);
+
         int num_good_pts = 0;
 
         cv::Mat show = current_frame_->left_img_.clone();
@@ -278,7 +281,7 @@ namespace stereo_vo
 
         for (size_t i = 0; i < status.size(); ++i)
         {
-            if (status[i])
+            if (status[i] && inliersMask.at<char>(i))
             {
                 cv::KeyPoint kp(kps_current[i], 7);
                 Feature::Ptr feature(new Feature(current_frame_, kp));
