@@ -6,7 +6,7 @@ namespace stereo_vo
     {
         this->num_features_init_ = num_features_init;
         this->num_features_ = num_features;
-        this->_gftt = cv::GFTTDetector::create(num_features, 0.01, 1.0, 5, false);
+        this->_gftt = cv::GFTTDetector::create(num_features, 0.01, 1.0, 3, false);
     }
 
     bool Frontend::AddFrame(stereo_vo::Frame::Ptr frame)
@@ -266,13 +266,13 @@ namespace stereo_vo
         cv::Mat error;
         cv::calcOpticalFlowPyrLK(
             last_frame_->left_img_, current_frame_->left_img_, kps_last,
-            kps_current, status, error, cv::Size(31, 31), 5,
+            kps_current, status, error, cv::Size(31, 31), 7,
             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,
                              0.01),
             cv::OPTFLOW_USE_INITIAL_FLOW);
 
         cv::Mat inliersMask;
-        cv::Mat H = cv::findHomography(kps_last, kps_current, inliersMask, cv::RANSAC, 3.0);
+        cv::Mat H = cv::findHomography(kps_last, kps_current, inliersMask, cv::RANSAC, 3.3);
 
         int num_good_pts = 0;
 
@@ -365,12 +365,16 @@ namespace stereo_vo
         cv::Mat error;
         cv::calcOpticalFlowPyrLK(
             current_frame_->left_img_, current_frame_->right_img_, kps_left,
-            kps_right, status, error, cv::Size(31, 31), 5,
+            kps_right, status, error, cv::Size(31, 31), 7,
             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30,
                              0.01),
             cv::OPTFLOW_USE_INITIAL_FLOW);
 
-        cv::Mat show = current_frame_->right_img_.clone();
+        cv::Mat show = cv::Mat(current_frame_->left_img_.rows, current_frame_->left_img_.cols + current_frame_->right_img_.cols, current_frame_->left_img_.type(), cv::Scalar::all(0));
+
+        current_frame_->left_img_.copyTo(show(cv::Rect(0, 0, current_frame_->left_img_.cols, current_frame_->left_img_.rows)));
+        current_frame_->right_img_.copyTo(show(cv::Rect(current_frame_->left_img_.cols, 0, current_frame_->left_img_.cols, current_frame_->left_img_.rows)));
+
         cv::cvtColor(show, show, cv::COLOR_GRAY2BGR);
 
         int num_good_pts = 0;
@@ -378,7 +382,7 @@ namespace stereo_vo
         {
             if (status[i])
             {
-                if (abs(kps_right[i].y - kps_left[i].y) > 20 || kps_right[i].x - kps_left[i].x > 0)
+                if (abs(kps_left[i].y - kps_right[i].y) / (kps_left[i].x - kps_right[i].x) > 0.3 || kps_left[i].x - kps_right[i].x < 0)
                 {
                     status[i] = false;
                     current_frame_->features_right_.push_back(nullptr);
@@ -389,8 +393,9 @@ namespace stereo_vo
                 feat->is_on_left_image_ = false;
                 current_frame_->features_right_.push_back(feat);
                 num_good_pts++;
-                cv::line(show, kps_right[i], kps_left[i], cv::Scalar(0, 0, 255));
-                cv::circle(show, kps_right[i], 2, cv::Scalar(0, 255, 0));
+                cv::line(show, kps_left[i], kps_right[i] + cv::Point2f(current_frame_->left_img_.cols, 0), cv::Scalar(0, 0, 255));
+                cv::circle(show, kps_left[i], 2, cv::Scalar(0, 255, 0));
+                cv::circle(show, kps_right[i] + cv::Point2f(current_frame_->left_img_.cols, 0), 2, cv::Scalar(255, 0, 0));
             }
             else
             {
