@@ -388,6 +388,7 @@ namespace stereo_vo
                     current_frame_->features_right_.push_back(nullptr);
                     continue;
                 }
+                kps_right[i].y = kps_left[i].y;
                 cv::KeyPoint kp(kps_right[i], 7);
                 Feature::Ptr feat(new Feature(current_frame_, kp));
                 feat->is_on_left_image_ = false;
