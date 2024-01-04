@@ -8,9 +8,8 @@ endif()
 add_compile_options(-std=c++17)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mpopcnt")
-list( APPEND CMAKE_MODULE_PATH /home/nine-fish/g2o/cmake_modules ) # g2o安装位置
+list( APPEND CMAKE_MODULE_PATH /home/nine-fish/envs/g2o/cmake_modules ) # g2o安装位置
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -116,12 +115,6 @@ install(DIRECTORY
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 

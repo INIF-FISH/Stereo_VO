@@ -80,7 +80,8 @@
         "compare": "cpp",
         "concepts": "cpp",
         "ranges": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "wit_c_sdk.h": "c"
     },
     "python.autoComplete.extraPaths": [
         "/home/nine-fish/vision_opencv-3.1.3/install/opencv_tests/lib/python3.8/site-packages",
